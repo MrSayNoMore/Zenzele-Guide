@@ -13,7 +13,7 @@ import { nextPublicProcessEnv } from './plugins/nextPublicProcessEnv';
 import { restart } from './plugins/restart';
 import { restartEnvFileChange } from './plugins/restartEnvFileChange';
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   // Keep them available via import.meta.env.NEXT_PUBLIC_*
   envPrefix: 'NEXT_PUBLIC_',
   optimizeDeps: {
@@ -37,7 +37,9 @@ export default defineConfig({
     restartEnvFileChange(),
     reactRouterHonoServer({
       serverEntryPoint: './__create/index.ts',
-      runtime: 'node',
+      // node for local dev (`react-router dev`); cloudflare for the production
+      // build that Cloudflare Workers runs (`react-router build`).
+      runtime: command === 'build' ? 'cloudflare' : 'node',
     }),
     babel({
       include: ['src/**/*.{js,jsx,ts,tsx}'], // or RegExp: /src\/.*\.[tj]sx?$/
@@ -45,6 +47,13 @@ export default defineConfig({
       babelConfig: {
         babelrc: false, // don’t merge other Babel files
         configFile: false,
+        // Strip TS types and parse JSX so downstream plugins (react-router's
+        // route transform) receive plain JS. styled-jsx runs first (plugins
+        // before presets) so it still sees intact JSX.
+        presets: [
+          ['@babel/preset-react', { runtime: 'automatic' }],
+          '@babel/preset-typescript',
+        ],
         plugins: ['styled-jsx/babel'],
       },
     }),
@@ -68,6 +77,11 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
+      // During the production build, swap the Hono server adapter to the
+      // Cloudflare Workers entry. Dev stays on the node adapter.
+      ...(command === 'build'
+        ? { 'react-router-hono-server/node': 'react-router-hono-server/cloudflare' }
+        : {}),
       lodash: 'lodash-es',
       'npm:stripe': 'stripe',
       stripe: path.resolve(__dirname, './src/__create/stripe'),
@@ -83,7 +97,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 4000,
     fs: {
-      allow: ['..', '../../shared'],
+      allow: ['..', '../shared'],
     },
     hmr: {
       overlay: false,
@@ -92,4 +106,4 @@ export default defineConfig({
       clientFiles: ['./src/app/**/*', './src/app/root.tsx', './src/app/routes.ts'],
     },
   },
-});
+}));
