@@ -1,0 +1,33 @@
+{
+  // Cloudflare Workers / Pages configuration for Zenzele Guide.
+  // See CLOUDFLARE-DEPLOY.md for the full step-by-step.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "zenzele-guide",
+  "compatibility_date": "2025-06-01",
+
+  // Required: lets postgres.js / node built-ins run on the Workers runtime.
+  "compatibility_flags": ["nodejs_compat"],
+
+  // The server bundle + static client assets produced by `npm run build`.
+  // Adjust these paths if your build output differs (check ./build after building).
+  "main": "./build/server/index.js",
+  "assets": {
+    "directory": "./build/client"
+  },
+
+  // Hyperdrive pools your Supabase Postgres connection for the Workers runtime.
+  // Create it with:  npx wrangler hyperdrive create zenzele-db --connection-string="<your Supabase pooler URL>"
+  // then paste the returned id below. The binding name MUST stay "HYPERDRIVE"
+  // (that's what src/app/api/utils/sql.js looks for).
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "d526a3db1ef64ac5b265d2ffd082a70f"
+    }
+  ]
+
+  // AUTH note: __create/index.ts still creates a Neon Pool for the (currently
+  // dormant) auth system. It only connects if AUTH_SECRET is set AND an auth
+  // route is hit, so it is safe to deploy as-is. Wire it to Hyperdrive later if
+  // you enable accounts.
+}

@@ -1,0 +1,8 @@
+<svg id="svg-fav32" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="32" height="32" rx="6" fill="#085041"></rect>
+          <clipPath id="zt-f"><rect x="3" y="2" width="26" height="14"></rect></clipPath>
+          <clipPath id="zb-f"><rect x="3" y="16" width="26" height="16"></rect></clipPath>
+          <text x="2" y="30" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="30" font-weight="900" fill="#1D9E75" clip-path="url(#zt-f)">Z</text>
+          <text x="2" y="30" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="30" font-weight="900" fill="#FAC775" clip-path="url(#zb-f)">Z</text>
+          <rect x="2" y="15" width="21" height="1.5" fill="#085041"></rect>
+        </svg>

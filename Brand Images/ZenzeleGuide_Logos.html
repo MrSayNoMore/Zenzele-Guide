@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Zenzele Guide — Logo Concepts</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; padding: 32px 24px 48px; color: #1a1a1a; }
+  .page-header { text-align: center; margin-bottom: 40px; }
+  .page-header h1 { font-size: 28px; font-weight: 700; color: #085041; margin-bottom: 6px; }
+  .page-header p { font-size: 14px; color: #555; }
+  .banner { background: #E1F5EE; border-radius: 12px; padding: 14px 20px; display: none; align-items: center; gap: 14px; margin-bottom: 28px; max-width: 860px; margin-left: auto; margin-right: auto; }
+  .banner.show { display: flex; }
+  .banner p { font-size: 15px; font-weight: 600; color: #085041; flex: 1; }
+  .banner small { font-size: 12px; color: #1D9E75; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; max-width: 860px; margin: 0 auto; }
+  .card { background: #fff; border-radius: 16px; border: 1px solid #e8e8e4; overflow: hidden; transition: border-color .2s; }
+  .card.chosen { border: 2.5px solid #1D9E75; }
+  .dots { display: flex; gap: 6px; padding: 10px 14px 0; justify-content: flex-end; }
+  .dot { width: 16px; height: 16px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color .15s; }
+  .dot.on { border-color: #1D9E75; }
+  .preview { display: flex; align-items: center; justify-content: center; padding: 24px 16px 20px; min-height: 120px; transition: background .2s; }
+  .info { padding: 12px 16px 16px; }
+  .info h3 { font-size: 14px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+  .info .desc { font-size: 12px; color: #666; line-height: 1.6; margin-bottom: 10px; }
+  .foot { display: flex; align-items: center; justify-content: space-between; }
+  .concept { font-size: 10px; padding: 3px 9px; border-radius: 8px; background: #E1F5EE; color: #085041; font-weight: 600; }
+  .pick { font-size: 12px; padding: 6px 18px; background: #1D9E75; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+  .pick.chosen { background: #E1F5EE; color: #085041; border: 1px solid #1D9E75; }
+  .label-row { display: flex; gap: 6px; margin-bottom: 8px; }
+  .opt-label { font-size: 11px; padding: 2px 8px; border-radius: 6px; background: #085041; color: white; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Zenzele Guide — Logo Concepts</h1>
+  <p>Click the coloured dots to preview each logo on different backgrounds. Pick the one that feels right.</p>
+</div>
+
+<div class="banner" id="banner">
+  <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="14" fill="#1D9E75"/><path d="M8 14l4 4 8-8" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div><p id="banner-name">Logo chosen</p><small>Your Zenzele Guide identity is set.</small></div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const G='#1D9E75', DG='#085041', LG='#E1F5EE', AU='#FAC775', W='white';
+const bgMap={dk:'#085041',wh:'#ffffff',lg:'#E1F5EE',ch:'#1a1a1a'};
+const dotMap={dk:'#085041',wh:'#dddddd',lg:'#9FE1CB',ch:'#333333'};
+
+function tc(bg){
+  return {
+    main: bg==='wh'||bg==='lg' ? DG : W,
+    sub:  bg==='wh'||bg==='lg' ? G   : '#9FE1CB',
+    mark: bg==='wh'||bg==='lg' ? DG  : G,
+  };
+}
+
+const logos=[
+  {
+    id:'A', name:'The rising path', concept:'Upward journey',
+    desc:'A bold upward arrow sits inside a rounded square — clean, modern, and immediately communicates ambition and forward movement. The gold base gives it groundedness.',
+    bgs:['dk','wh','lg','ch'], def:'dk',
+    svg(bg){
+      const {main,sub,mark}=tc(bg);
+      return`<svg width="220" height="82" viewBox="0 0 220 82" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="9" width="56" height="56" rx="12" fill="${bg==='wh'?DG:G}"/>
+        <polygon points="29,17 41,37 33,37 33,55 25,55 25,37 17,37" fill="${W}"/>
+        <rect x="25" y="55" width="8" height="3.5" rx="1.5" fill="${AU}"/>
+        <text x="67" y="38" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="22" font-weight="800" fill="${main}">Zenzele</text>
+        <text x="68" y="57" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="13" font-weight="300" fill="${sub}" letter-spacing="4">GUIDE</text>
+      </svg>`;
+    }
+  },
+  {
+    id:'B', name:'Ubuntu circle', concept:'Community & together',
+    desc:'Three figures of different heights rising inside a circle — the tallest in the centre lifts the others. Direct reference to Ubuntu: "I am because we are." Warm, human, distinctly African.',
+    bgs:['dk','wh','lg','ch'], def:'dk',
+    svg(bg){
+      const {main,sub}=tc(bg);
+      const ac = bg==='dk'||bg==='ch' ? '#5DCAA5' : G;
+      return`<svg width="220" height="82" viewBox="0 0 220 82" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="31" cy="37" r="30" fill="${bg==='wh'?DG:G}"/>
+        <circle cx="31" cy="37" r="26" fill="none" stroke="${ac}" stroke-width="0.8"/>
+        <circle cx="19" cy="27" r="4" fill="${W}" opacity="0.6"/>
+        <path d="M12 45 Q19 35 26 43" fill="none" stroke="${W}" stroke-width="1.8" stroke-linecap="round" opacity="0.6"/>
+        <circle cx="31" cy="22" r="5.5" fill="${W}"/>
+        <path d="M21 45 Q31 32 41 45" fill="none" stroke="${W}" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="43" cy="27" r="4" fill="${W}" opacity="0.6"/>
+        <path d="M36 45 Q43 35 50 43" fill="none" stroke="${W}" stroke-width="1.8" stroke-linecap="round" opacity="0.6"/>
+        <rect x="17" y="49" width="28" height="3" rx="1.5" fill="${AU}"/>
+        <text x="71" y="38" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="22" font-weight="800" fill="${main}">Zenzele</text>
+        <text x="72" y="57" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="13" font-weight="300" fill="${sub}" letter-spacing="4">GUIDE</text>
+      </svg>`;
+    }
+  },
+  {
+    id:'C', name:'Z-compass', concept:'Navigation & direction',
+    desc:'The letter Z is built as a compass shape inside a circle with dashed orbit lines. Navigating your future — and your name is literally in the symbol. Geometric and modern.',
+    bgs:['wh','dk','lg','ch'], def:'wh',
+    svg(bg){
+      const {main,sub}=tc(bg);
+      const ac = bg==='dk'||bg==='ch' ? '#5DCAA5' : '#1D9E75';
+      return`<svg width="220" height="82" viewBox="0 0 220 82" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="31" cy="37" r="30" fill="${bg==='wh'?DG:G}"/>
+        <circle cx="31" cy="37" r="23" fill="none" stroke="${ac}" stroke-width="0.8" stroke-dasharray="3 2.5"/>
+        <polygon points="15,23 47,23 47,29 23,45 47,45 47,51 15,51 15,45 39,29 15,29" fill="${W}"/>
+        <circle cx="31" cy="37" r="3.5" fill="${AU}"/>
+        <text x="71" y="38" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="22" font-weight="800" fill="${main}">Zenzele</text>
+        <text x="72" y="57" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="13" font-weight="300" fill="${sub}" letter-spacing="4">GUIDE</text>
+      </svg>`;
+    }
+  },
+  {
+    id:'D', name:'Ilanga flame', concept:'Rise & illuminate',
+    desc:'A gold flame — "Ilanga" means sun in Zulu. The organic leaf-flame shape captures phakama (rise) and warmth simultaneously. The two-tone interior gives it depth and movement.',
+    bgs:['wh','dk','lg','ch'], def:'wh',
+    svg(bg){
+      const {main,sub}=tc(bg);
+      const inner = bg==='dk'||bg==='ch' ? W : LG;
+      return`<svg width="220" height="82" viewBox="0 0 220 82" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="9" width="60" height="62" rx="14" fill="${bg==='wh'?DG:G}"/>
+        <path d="M31 57C21 47 17 36 23 25C25 21 29 18 31 17C31 17 27 30 36 34C40 36 42 32 40 28C46 34 47 44 41 52C38 56 35 58 31 57Z" fill="${AU}"/>
+        <path d="M31 57C25 53 23 46 27 40C29 50 37 48 37 42C41 48 39 54 31 57Z" fill="${inner}"/>
+        <text x="72" y="38" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="22" font-weight="800" fill="${main}">Zenzele</text>
+        <text x="73" y="57" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="13" font-weight="300" fill="${sub}" letter-spacing="4">GUIDE</text>
+      </svg>`;
+    }
+  },
+  {
+    id:'E', name:'Bold wordmark', concept:'Typography-first',
+    desc:'No icon — pure type. "Zenzele" in heavy weight anchors the brand; "Guide" in light tracking creates contrast. The Ilanga Gold bar is the only accent. Clean, bold, unforgettable.',
+    bgs:['wh','dk','lg','ch'], def:'wh',
+    svg(bg){
+      const {main,sub}=tc(bg);
+      return`<svg width="220" height="82" viewBox="0 0 220 82" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <text x="0" y="36" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="30" font-weight="900" fill="${main}">Zenzele</text>
+        <text x="2" y="57" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="14" font-weight="300" fill="${sub}" letter-spacing="7">GUIDE</text>
+        <rect x="0" y="64" width="108" height="4" rx="2" fill="${AU}"/>
+      </svg>`;
+    }
+  },
+  {
+    id:'F', name:'Sunrise / Ilanga', concept:'Hope & new beginnings',
+    desc:'A rising sun with gold rays — "Ilanga" (sun in Zulu) rising over the horizon. Represents a new day, new possibilities, and hope for every student. The semicircle is clean and iconic.',
+    bgs:['dk','wh','lg','ch'], def:'dk',
+    svg(bg){
+      const {main,sub}=tc(bg);
+      return`<svg width="220" height="82" viewBox="0 0 220 82" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="9" width="60" height="62" rx="14" fill="${bg==='wh'?DG:G}"/>
+        <path d="M10 53 A21 21 0 0 1 52 53Z" fill="${W}"/>
+        <line x1="31" y1="14" x2="31" y2="22" stroke="${AU}" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="13" y1="23" x2="18" y2="29" stroke="${AU}" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="49" y1="23" x2="44" y2="29" stroke="${AU}" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="6" y1="40" x2="14" y2="40" stroke="${AU}" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="56" y1="40" x2="48" y2="40" stroke="${AU}" stroke-width="2.5" stroke-linecap="round"/>
+        <rect x="8" y="55" width="46" height="3.5" rx="1.5" fill="${AU}"/>
+        <text x="72" y="38" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="22" font-weight="800" fill="${main}">Zenzele</text>
+        <text x="73" y="57" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="13" font-weight="300" fill="${sub}" letter-spacing="4">GUIDE</text>
+      </svg>`;
+    }
+  }
+];
+
+let chosen=null;
+let activeBg={};
+logos.forEach(l=>activeBg[l.id]=l.def);
+
+function render(){
+  document.getElementById('grid').innerHTML=logos.map(l=>{
+    const ab=activeBg[l.id];
+    const isPicked=chosen===l.id;
+    const dotHtml=l.bgs.map(b=>`<div class="dot${ab===b?' on':''}" style="background:${dotMap[b]};${ab===b?'border-color:#1D9E75;':''}" onclick="setBg('${l.id}','${b}')" title="${b}"></div>`).join('');
+    return`<div class="card${isPicked?' chosen':''}" id="card-${l.id}">
+      <div class="dots">${dotHtml}</div>
+      <div class="preview" style="background:${bgMap[ab]}">${l.svg(ab)}</div>
+      <div class="info">
+        <div class="label-row"><span class="opt-label">Option ${l.id}</span></div>
+        <h3>${l.name}</h3>
+        <p class="desc">${l.desc}</p>
+        <div class="foot">
+          <span class="concept">${l.concept}</span>
+          <button class="pick${isPicked?' chosen':''}" onclick="pick('${l.id}','${l.name}')">${isPicked?'✓ Chosen':'Pick this'}</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setBg(id,bg){activeBg[id]=bg;render();}
+function pick(id,name){
+  chosen=id; render();
+  document.getElementById('banner-name').textContent=`Option ${id} — ${name} chosen as your Zenzele Guide logo.`;
+  document.getElementById('banner').classList.add('show');
+  document.getElementById('banner').scrollIntoView({behavior:'smooth',block:'start'});
+}
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+<svg id="svg-cover-lt" width="780" height="130" viewBox="0 0 780 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <clipPath id="zt-cl"><rect x="0" y="0" width="100" height="70"></rect></clipPath>
+          <clipPath id="zb-cl"><rect x="0" y="70" width="100" height="70"></rect></clipPath>
+          <text x="0" y="126" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="130" font-weight="900" fill="#1D9E75" clip-path="url(#zt-cl)">Z</text>
+          <text x="0" y="126" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="130" font-weight="900" fill="#FAC775" clip-path="url(#zb-cl)">Z</text>
+          <rect x="0" y="67" width="96" height="4" fill="#E1F5EE"></rect>
+          <text x="120" y="70" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="52" font-weight="900" fill="#085041" letter-spacing="-1">Zenzele Guide</text>
+          <text x="122" y="102" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="20" font-weight="300" fill="#1D9E75" letter-spacing="4">Do it yourself — but not alone.</text>
+          <rect x="120" y="112" width="340" height="3" rx="1.5" fill="#FAC775"></rect>
+          <text x="640" y="160" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="200" font-weight="900" fill="#085041" opacity="0.05">Z</text>
+        </svg>

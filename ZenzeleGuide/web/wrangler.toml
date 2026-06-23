@@ -1,0 +1,7 @@
+name = "zenzele-guide"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "./build/client"
+
+[vars]
+NEXT_PUBLIC_CREATE_ENV = "PRODUCTION"

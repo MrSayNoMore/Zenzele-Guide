@@ -1,0 +1,407 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  .app { max-width: 680px; padding: 1.5rem 0; }
+  .header { text-align: center; margin-bottom: 2rem; }
+  .header h1 { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+  .header p { font-size: 14px; color: var(--color-text-secondary); margin-top: 6px; }
+  .badge { display: inline-block; background: var(--color-background-success); color: var(--color-text-success); font-size: 11px; padding: 3px 10px; border-radius: 20px; margin-top: 8px; }
+  .stepper { display: flex; gap: 0; margin-bottom: 2rem; }
+  .step { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }
+  .step:not(:last-child)::after { content: ''; position: absolute; top: 14px; left: calc(50% + 14px); width: calc(100% - 28px); height: 1px; background: var(--color-border-tertiary); z-index: 0; }
+  .step.done:not(:last-child)::after { background: #1D9E75; }
+  .step-circle { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; border: 1.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-secondary); z-index: 1; transition: all 0.3s; }
+  .step.active .step-circle { background: #1D9E75; border-color: #1D9E75; color: white; }
+  .step.done .step-circle { background: #1D9E75; border-color: #1D9E75; color: white; }
+  .step-label { font-size: 11px; color: var(--color-text-secondary); margin-top: 6px; text-align: center; }
+  .step.active .step-label { color: #1D9E75; font-weight: 500; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+  .card h3 { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 12px; color: var(--color-text-secondary); }
+  .form-group select, .form-group input { font-size: 13px; }
+  .subjects-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .subject-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 8px 10px; }
+  .subject-name { font-size: 12px; color: var(--color-text-secondary); }
+  .subject-row select { font-size: 12px; width: 70px; padding: 2px 4px; border: 0.5px solid var(--color-border-secondary); border-radius: 4px; background: var(--color-background-primary); color: var(--color-text-primary); }
+  .aps-display { background: var(--color-background-success); border-radius: var(--border-radius-md); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+  .aps-label { font-size: 13px; color: var(--color-text-success); }
+  .aps-score { font-size: 28px; font-weight: 500; color: var(--color-text-success); }
+  .interest-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { padding: 6px 14px; border-radius: 20px; font-size: 12px; border: 0.5px solid var(--color-border-secondary); background: var(--color-background-secondary); color: var(--color-text-secondary); cursor: pointer; transition: all 0.2s; }
+  .chip.selected { background: #E1F5EE; border-color: #1D9E75; color: #0F6E56; font-weight: 500; }
+  .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; }
+  .btn-primary { background: #1D9E75; color: white; border: none; padding: 10px 24px; border-radius: var(--border-radius-md); font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+  .btn-secondary { background: transparent; color: var(--color-text-secondary); border: 0.5px solid var(--color-border-secondary); padding: 10px 20px; border-radius: var(--border-radius-md); font-size: 14px; cursor: pointer; }
+  .ai-thinking { background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 1.5rem; text-align: center; display: none; }
+  .ai-thinking.show { display: block; }
+  .dots { display: inline-flex; gap: 6px; margin-top: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #1D9E75; animation: bounce 1.2s infinite; }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
+  .result-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+  .result-card.featured { border: 2px solid #1D9E75; }
+  .result-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+  .result-logo { width: 44px; height: 44px; border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 500; flex-shrink: 0; }
+  .result-logo.green { background: #E1F5EE; color: #0F6E56; }
+  .result-logo.blue { background: var(--color-background-info); color: var(--color-text-info); }
+  .result-logo.amber { background: #FAEEDA; color: #854F0B; }
+  .result-meta { flex: 1; }
+  .result-meta h4 { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  .result-meta p { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+  .result-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .rbadge { font-size: 11px; padding: 3px 8px; border-radius: 12px; }
+  .rbadge.match { background: #E1F5EE; color: #0F6E56; }
+  .rbadge.aps { background: var(--color-background-info); color: var(--color-text-info); }
+  .rbadge.bursary { background: #FAEEDA; color: #854F0B; }
+  .result-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 0.5px solid var(--color-border-tertiary); }
+  .match-score { font-size: 13px; color: var(--color-text-secondary); }
+  .match-score span { font-weight: 500; color: #1D9E75; }
+  .btn-apply { font-size: 12px; padding: 6px 16px; background: #1D9E75; color: white; border: none; border-radius: var(--border-radius-md); cursor: pointer; }
+  .section-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin: 1.5rem 0 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .best-badge { font-size: 11px; background: #E1F5EE; color: #0F6E56; padding: 3px 10px; border-radius: 12px; }
+  .accom-card { display: flex; gap: 12px; align-items: center; background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; margin-bottom: 8px; }
+  .accom-icon { width: 36px; height: 36px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .accom-info h5 { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+  .accom-info p { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+  .accom-price { margin-left: auto; font-size: 13px; font-weight: 500; color: var(--color-text-primary); white-space: nowrap; }
+  .upload-box { border: 1px dashed var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 1.5rem; text-align: center; cursor: pointer; margin-bottom: 12px; }
+  .upload-box p { font-size: 13px; color: var(--color-text-secondary); margin-top: 8px; }
+  .upload-box small { font-size: 11px; color: var(--color-text-tertiary); }
+  .progress-bar { height: 4px; background: var(--color-border-tertiary); border-radius: 2px; margin: 12px 0; }
+  .progress-bar .fill { height: 100%; background: #1D9E75; border-radius: 2px; transition: width 0.5s; }
+</style>
+
+<div class="app">
+  <h2 class="sr-only">SA Student Guidance Platform - Interactive prototype showing student portal flow</h2>
+
+  <div class="header">
+    <h1><i class="ti ti-school" aria-hidden="true" style="font-size:20px; vertical-align:-2px; margin-right:8px; color:#1D9E75;"></i>StudyPath SA</h1>
+    <p>AI-powered guidance for matric students</p>
+    <span class="badge"><i class="ti ti-sparkles" aria-hidden="true" style="font-size:11px; vertical-align:-1px; margin-right:4px;"></i>AI Powered</span>
+  </div>
+
+  <div class="stepper">
+    <div class="step active" id="s1"><div class="step-circle">1</div><div class="step-label">Results</div></div>
+    <div class="step" id="s2"><div class="step-circle">2</div><div class="step-label">Interests</div></div>
+    <div class="step" id="s3"><div class="step-circle">3</div><div class="step-label">Analyse</div></div>
+    <div class="step" id="s4"><div class="step-circle">4</div><div class="step-label">Matches</div></div>
+  </div>
+
+  <!-- Step 1: Results -->
+  <div class="panel active" id="panel1">
+    <div class="card">
+      <h3><i class="ti ti-file-text" aria-hidden="true" style="color:#1D9E75;"></i>Upload your results</h3>
+      <div class="upload-box" onclick="simulateUpload(this)">
+        <i class="ti ti-upload" aria-hidden="true" style="font-size:24px; color:var(--color-text-tertiary);"></i>
+        <p>Click to upload your matric or grade 11 results</p>
+        <small>PDF, JPG, PNG — or enter marks manually below</small>
+      </div>
+      <div class="progress-bar" id="upload-progress" style="display:none;"><div class="fill" id="upload-fill" style="width:0%;"></div></div>
+    </div>
+
+    <div class="card">
+      <h3><i class="ti ti-clipboard-list" aria-hidden="true" style="color:#1D9E75;"></i>Your subject marks</h3>
+      <div class="subjects-grid" id="subjects-grid">
+      </div>
+      <div class="aps-display">
+        <span class="aps-label"><i class="ti ti-calculator" aria-hidden="true" style="font-size:14px; vertical-align:-1px; margin-right:6px;"></i>Your APS Score</span>
+        <span class="aps-score" id="aps-score">0</span>
+      </div>
+    </div>
+    <div class="actions">
+      <div></div>
+      <button class="btn-primary" onclick="goStep(2)">Next: Interests <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
+    </div>
+  </div>
+
+  <!-- Step 2: Interests -->
+  <div class="panel" id="panel2">
+    <div class="card">
+      <h3><i class="ti ti-heart" aria-hidden="true" style="color:#1D9E75;"></i>What would you like to study?</h3>
+      <p style="font-size:13px; color:var(--color-text-secondary); margin-bottom:12px;">Select all that interest you</p>
+      <div class="interest-chips" id="interest-chips">
+      </div>
+    </div>
+    <div class="card">
+      <h3><i class="ti ti-map-pin" aria-hidden="true" style="color:#1D9E75;"></i>Province preference</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Home province</label>
+          <select><option>Gauteng</option><option>Western Cape</option><option>KwaZulu-Natal</option><option>Eastern Cape</option><option>Limpopo</option><option>Mpumalanga</option><option>North West</option><option>Free State</option><option>Northern Cape</option></select>
+        </div>
+        <div class="form-group">
+          <label>Study anywhere?</label>
+          <select><option>Yes, any province</option><option>Prefer home province</option><option>Gauteng only</option><option>Western Cape only</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3><i class="ti ti-coins" aria-hidden="true" style="color:#1D9E75;"></i>Financial situation</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Funding source</label>
+          <select><option>Need bursary / NSFAS</option><option>Self-funded</option><option>Family funded</option><option>Partial funding</option></select>
+        </div>
+        <div class="form-group">
+          <label>Institution type</label>
+          <select><option>Any (public + private)</option><option>Public university only</option><option>Private college</option><option>TVET college</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary" onclick="goStep(1)">Back</button>
+      <button class="btn-primary" onclick="goStep(3)">Analyse my options <i class="ti ti-sparkles" aria-hidden="true"></i></button>
+    </div>
+  </div>
+
+  <!-- Step 3: AI analysing -->
+  <div class="panel" id="panel3">
+    <div class="ai-thinking show" id="ai-loader">
+      <i class="ti ti-brain" aria-hidden="true" style="font-size:32px; color:#1D9E75;"></i>
+      <p style="font-size:14px; font-weight:500; color:var(--color-text-primary); margin-top:12px;" id="ai-status">Calculating your APS score...</p>
+      <p style="font-size:13px; color:var(--color-text-secondary); margin-top:4px;">Cross-referencing 26 university prospectuses</p>
+      <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    </div>
+  </div>
+
+  <!-- Step 4: Results -->
+  <div class="panel" id="panel4">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+      <div>
+        <p style="font-size:13px; color:var(--color-text-secondary);">Based on APS <strong id="final-aps" style="color:#1D9E75;">32</strong> · <span id="final-interests" style="color:var(--color-text-secondary);">Engineering, Technology</span></p>
+      </div>
+      <button class="btn-primary" style="font-size:12px; padding:7px 14px;" onclick="sendPrompt('Tell me more about applying to Wits for Engineering')">Ask AI ↗</button>
+    </div>
+
+    <p class="section-title">Best matches — universities</p>
+
+    <div class="result-card featured">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+        <span class="best-badge"><i class="ti ti-star" aria-hidden="true" style="font-size:10px; vertical-align:-1px; margin-right:4px;"></i>Best match</span>
+      </div>
+      <div class="result-header">
+        <div class="result-logo green">W</div>
+        <div class="result-meta">
+          <h4>University of the Witwatersrand</h4>
+          <p><i class="ti ti-map-pin" aria-hidden="true" style="font-size:11px; vertical-align:-1px;"></i> Johannesburg, Gauteng</p>
+        </div>
+      </div>
+      <div class="result-badges">
+        <span class="rbadge match"><i class="ti ti-check" aria-hidden="true" style="font-size:10px; vertical-align:-1px; margin-right:3px;"></i>Qualifies: BSc Engineering</span>
+        <span class="rbadge aps">APS req: 32+</span>
+        <span class="rbadge bursary">NSFAS eligible</span>
+      </div>
+      <div class="result-footer">
+        <span class="match-score">Match score: <span>97%</span></span>
+        <button class="btn-apply" onclick="sendPrompt('Show me the full application details for Wits BSc Engineering')">View details ↗</button>
+      </div>
+    </div>
+
+    <div class="result-card">
+      <div class="result-header">
+        <div class="result-logo blue">U</div>
+        <div class="result-meta">
+          <h4>University of Pretoria (Tuks)</h4>
+          <p><i class="ti ti-map-pin" aria-hidden="true" style="font-size:11px; vertical-align:-1px;"></i> Pretoria, Gauteng</p>
+        </div>
+      </div>
+      <div class="result-badges">
+        <span class="rbadge match"><i class="ti ti-check" aria-hidden="true" style="font-size:10px; vertical-align:-1px; margin-right:3px;"></i>Qualifies: BEng</span>
+        <span class="rbadge aps">APS req: 30+</span>
+        <span class="rbadge bursary">Sasol Bursary available</span>
+      </div>
+      <div class="result-footer">
+        <span class="match-score">Match score: <span>91%</span></span>
+        <button class="btn-apply" onclick="sendPrompt('Show me application details for UP Engineering')">View details ↗</button>
+      </div>
+    </div>
+
+    <div class="result-card">
+      <div class="result-header">
+        <div class="result-logo amber">C</div>
+        <div class="result-meta">
+          <h4>CTI Education Group</h4>
+          <p><i class="ti ti-map-pin" aria-hidden="true" style="font-size:11px; vertical-align:-1px;"></i> Nationwide (Private)</p>
+        </div>
+      </div>
+      <div class="result-badges">
+        <span class="rbadge match"><i class="ti ti-check" aria-hidden="true" style="font-size:10px; vertical-align:-1px; margin-right:3px;"></i>Qualifies: IT Diploma</span>
+        <span class="rbadge aps">APS req: 20+</span>
+      </div>
+      <div class="result-footer">
+        <span class="match-score">Match score: <span>78%</span></span>
+        <button class="btn-apply" onclick="sendPrompt('Tell me about CTI IT programmes')">View details ↗</button>
+      </div>
+    </div>
+
+    <p class="section-title">Bursaries you qualify for</p>
+
+    <div class="result-card">
+      <div class="result-header">
+        <div class="result-logo green" style="font-size:11px; font-weight:500;">NS</div>
+        <div class="result-meta">
+          <h4>NSFAS — National Student Financial Aid</h4>
+          <p>Covers tuition, accommodation, meals & books</p>
+        </div>
+      </div>
+      <div class="result-badges">
+        <span class="rbadge match">Likely eligible</span>
+        <span class="rbadge bursary">Deadline: 30 Nov</span>
+      </div>
+      <div class="result-footer">
+        <span class="match-score">Covers up to <span>100%</span> of fees</span>
+        <button class="btn-apply" onclick="sendPrompt('How do I apply for NSFAS 2025?')">Apply ↗</button>
+      </div>
+    </div>
+
+    <p class="section-title">Recommended accommodation — Wits</p>
+
+    <div class="accom-card">
+      <div class="accom-icon"><i class="ti ti-building" aria-hidden="true" style="font-size:18px; color:#1D9E75;"></i></div>
+      <div class="accom-info">
+        <h5>Wits Residential Halls (on-campus)</h5>
+        <p>0 km from campus · Meals included · NSFAS covered</p>
+      </div>
+      <div class="accom-price">R2,800/mo</div>
+    </div>
+
+    <div class="accom-card">
+      <div class="accom-icon"><i class="ti ti-home" aria-hidden="true" style="font-size:18px; color:var(--color-text-secondary);"></i></div>
+      <div class="accom-info">
+        <h5>Braamfontein Private Studios</h5>
+        <p>0.4 km · Self-catering · WiFi included</p>
+      </div>
+      <div class="accom-price">R4,200/mo</div>
+    </div>
+
+    <div class="accom-card">
+      <div class="accom-icon"><i class="ti ti-users" aria-hidden="true" style="font-size:18px; color:var(--color-text-secondary);"></i></div>
+      <div class="accom-info">
+        <h5>Shared Student Apartments — Parktown</h5>
+        <p>1.2 km · 4 students per unit · Bus route</p>
+      </div>
+      <div class="accom-price">R2,100/mo</div>
+    </div>
+
+    <div style="margin-top:1.5rem; text-align:center;">
+      <button class="btn-primary" style="margin: 0 auto; display:inline-flex;" onclick="sendPrompt('Help me create an application checklist for Wits Engineering with all deadlines')">Generate my application checklist ↗</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const subjects = [
+  { name: 'English Home Lang', marks: 72 },
+  { name: 'Afrikaans First Add.', marks: 65 },
+  { name: 'Mathematics', marks: 78 },
+  { name: 'Physical Sciences', marks: 70 },
+  { name: 'Life Sciences', marks: 68 },
+  { name: 'Geography', marks: 62 },
+  { name: 'Life Orientation', marks: 80 }
+];
+
+const interests = ['Engineering','Medicine','Computer Science','Business','Law','Education','Architecture','Accounting','Design','Social Work','Nursing','Agriculture'];
+
+const gradeToAPS = { '90-100': 7, '80-89': 6, '70-79': 5, '60-69': 4, '50-59': 3, '40-49': 2, '30-39': 1 };
+
+function markToAPS(m) {
+  if (m >= 90) return 7;
+  if (m >= 80) return 6;
+  if (m >= 70) return 5;
+  if (m >= 60) return 4;
+  if (m >= 50) return 3;
+  if (m >= 40) return 2;
+  return 1;
+}
+
+function buildSubjects() {
+  const grid = document.getElementById('subjects-grid');
+  grid.innerHTML = subjects.map((s, i) => `
+    <div class="subject-row">
+      <span class="subject-name">${s.name}</span>
+      <select onchange="updateAPS()" id="mark-${i}">
+        ${[90,80,70,60,50,40,30,0].map(v => `<option value="${v}" ${s.marks >= v && (v===0 || s.marks < v+10 || v===90) ? '' : ''}>${v === 0 ? '0-29' : v+'-'+(v===90?'100':v+9)}</option>`).join('')}
+      </select>
+    </div>
+  `).join('');
+  subjects.forEach((s, i) => {
+    const sel = document.getElementById('mark-' + i);
+    const thresholds = [90,80,70,60,50,40,30];
+    for (let t of thresholds) { if (s.marks >= t) { sel.value = t; break; } }
+    if (s.marks < 30) sel.value = 0;
+  });
+  updateAPS();
+}
+
+function updateAPS() {
+  let total = 0;
+  subjects.forEach((s, i) => {
+    const sel = document.getElementById('mark-' + i);
+    if (sel) {
+      const mid = parseInt(sel.value) + (parseInt(sel.value) === 0 ? 15 : 5);
+      total += markToAPS(mid);
+    }
+  });
+  document.getElementById('aps-score').textContent = total;
+}
+
+function buildInterests() {
+  const container = document.getElementById('interest-chips');
+  container.innerHTML = interests.map(i => `<div class="chip" onclick="toggleChip(this)">${i}</div>`).join('');
+}
+
+function toggleChip(el) {
+  el.classList.toggle('selected');
+}
+
+function simulateUpload(box) {
+  const prog = document.getElementById('upload-progress');
+  const fill = document.getElementById('upload-fill');
+  prog.style.display = 'block';
+  let w = 0;
+  const iv = setInterval(() => {
+    w += 15;
+    fill.style.width = w + '%';
+    if (w >= 100) {
+      clearInterval(iv);
+      box.innerHTML = '<i class="ti ti-circle-check" aria-hidden="true" style="font-size:24px; color:#1D9E75;"></i><p style="color:#1D9E75; font-weight:500;">Results uploaded — marks extracted by AI</p><small>7 subjects detected</small>';
+      setTimeout(() => { prog.style.display = 'none'; }, 500);
+    }
+  }, 120);
+}
+
+function goStep(n) {
+  document.querySelectorAll('.panel').forEach((p, i) => p.classList.toggle('active', i === n - 1));
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.classList.toggle('active', i === n - 1);
+    s.classList.toggle('done', i < n - 1);
+  });
+  if (n === 3) {
+    const aps = document.getElementById('aps-score').textContent;
+    document.getElementById('final-aps').textContent = aps;
+    const selected = [...document.querySelectorAll('.chip.selected')].map(c => c.textContent).join(', ') || 'Engineering, Technology';
+    document.getElementById('final-interests').textContent = selected;
+    const statuses = ['Calculating your APS score...','Matching with university requirements...','Finding qualifying bursaries...','Searching accommodation options...'];
+    let idx = 0;
+    const iv = setInterval(() => {
+      idx++;
+      if (idx < statuses.length) {
+        document.getElementById('ai-status').textContent = statuses[idx];
+      } else {
+        clearInterval(iv);
+        setTimeout(() => goStep(4), 600);
+      }
+    }, 900);
+  }
+  window.scrollTo(0, 0);
+}
+
+buildSubjects();
+buildInterests();
+</script>
