@@ -13,9 +13,14 @@ import { nextPublicProcessEnv } from './plugins/nextPublicProcessEnv';
 import { restart } from './plugins/restart';
 import { restartEnvFileChange } from './plugins/restartEnvFileChange';
 
-export default defineConfig(({ command }) => ({
+export default defineConfig(({ command, isSsrBuild }) => ({
   // Keep them available via import.meta.env.NEXT_PUBLIC_*
   envPrefix: 'NEXT_PUBLIC_',
+  // The Cloudflare Workers (SSR) bundle uses top-level await (createHonoServer,
+  // route registration). workerd supports TLA, but Vite's default browser
+  // target (es2020) does not — bump only the SSR build to esnext so esbuild
+  // keeps the top-level await. The client build keeps Vite's browser target.
+  ...(isSsrBuild ? { build: { target: 'esnext' } } : {}),
   optimizeDeps: {
     // Explicitly include fast-glob, since it gets dynamically imported and we
     // don't want that to cause a re-bundle.
