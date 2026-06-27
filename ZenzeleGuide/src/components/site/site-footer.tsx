@@ -1,12 +1,11 @@
+import { Logo } from "@/components/site/logo";
+
 export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-border bg-[var(--brand-umhlaba)] text-white">
       <div className="mx-auto max-w-6xl px-4 py-12 grid gap-8 md:grid-cols-4">
         <div className="md:col-span-2">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold">Z</span>
-            <span className="font-semibold">Zenzele Guide</span>
-          </div>
+          <Logo onDark />
           <p className="mt-3 text-sm text-white/70 max-w-sm">
             Do it yourself — but not alone. South Africa's free guidance platform for learners moving from Grade 10 to their first job.
           </p>

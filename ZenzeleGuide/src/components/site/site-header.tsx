@@ -1,15 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
-import logoLight from "@/assets/ZenzeleGuide-Primary-Light.svg";
-import logoDark from "@/assets/ZenzeleGuide-Primary-Dark.svg";
+import { Logo } from "@/components/site/logo";
 
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="mx-auto max-w-6xl px-4 h-14 flex items-center justify-between">
-        <Link to="/" className="flex items-center" aria-label="Zenzele Guide — home">
-          <img src={logoLight} alt="Zenzele Guide" width={380} height={110} className="h-8 w-auto dark:hidden" />
-          <img src={logoDark} alt="" aria-hidden="true" width={380} height={110} className="hidden h-8 w-auto dark:block" />
+        <Link to="/" aria-label="Zenzele Guide — home">
+          <Logo />
         </Link>
         <nav className="hidden md:flex items-center gap-6 text-sm">
           <a href="/#journeys" className="text-muted-foreground hover:text-foreground transition">Journeys</a>

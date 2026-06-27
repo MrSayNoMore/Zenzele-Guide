@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   GraduationCap,
   Compass,
@@ -144,12 +144,12 @@ function Landing() {
                   Where are you in your journey?
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
                 </a>
-                <Link
-                  to="/"
+                <a
+                  href="/universities"
                   className="inline-flex min-h-14 items-center justify-center rounded-2xl border-2 border-[#cfe9df] bg-white px-6 text-base font-semibold text-[#085041] transition hover:border-[#1D9E75] hover:bg-[var(--brand-izolo)]"
                 >
                   Browse universities
-                </Link>
+                </a>
               </div>
 
               <p
