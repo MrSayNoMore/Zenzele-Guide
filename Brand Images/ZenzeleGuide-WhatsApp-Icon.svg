@@ -1,8 +1,0 @@
-<svg id="svg-whatsapp" width="110" height="110" viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="110" height="110" rx="28" fill="#085041"></rect>
-          <clipPath id="zt-wa"><rect x="12" y="8" width="86" height="52"></rect></clipPath>
-          <clipPath id="zb-wa"><rect x="12" y="60" width="86" height="54"></rect></clipPath>
-          <text x="10" y="104" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="100" font-weight="900" fill="#1D9E75" clip-path="url(#zt-wa)">Z</text>
-          <text x="10" y="104" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="100" font-weight="900" fill="#FAC775" clip-path="url(#zb-wa)">Z</text>
-          <rect x="10" y="57" width="73" height="3.5" fill="#085041"></rect>
-        </svg>

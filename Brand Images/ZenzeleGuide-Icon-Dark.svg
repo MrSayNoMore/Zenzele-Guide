@@ -1,7 +1,0 @@
-<svg id="svg-icon-dk" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <clipPath id="zt-id"><rect x="4" y="0" width="72" height="40"></rect></clipPath>
-          <clipPath id="zb-id"><rect x="4" y="40" width="72" height="40"></rect></clipPath>
-          <text x="4" y="76" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="80" font-weight="900" fill="#1D9E75" clip-path="url(#zt-id)">Z</text>
-          <text x="4" y="76" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="80" font-weight="900" fill="#FAC775" clip-path="url(#zb-id)">Z</text>
-          <rect x="4" y="39" width="58" height="2.5" fill="#085041"></rect>
-        </svg>

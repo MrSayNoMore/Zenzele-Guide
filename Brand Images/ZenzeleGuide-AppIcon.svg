@@ -1,8 +1,0 @@
-<svg id="svg-appicon" width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="80" height="80" rx="18" fill="#085041"></rect>
-          <clipPath id="zt-ai"><rect x="10" y="8" width="62" height="32"></rect></clipPath>
-          <clipPath id="zb-ai"><rect x="10" y="40" width="62" height="36"></rect></clipPath>
-          <text x="8" y="72" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="72" font-weight="900" fill="#1D9E75" clip-path="url(#zt-ai)">Z</text>
-          <text x="8" y="72" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="72" font-weight="900" fill="#FAC775" clip-path="url(#zb-ai)">Z</text>
-          <rect x="8" y="39" width="52" height="2.5" fill="#085041"></rect>
-        </svg>

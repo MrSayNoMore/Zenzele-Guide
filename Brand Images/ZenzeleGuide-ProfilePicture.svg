@@ -1,9 +1,0 @@
-<svg id="svg-profile" width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="50" fill="#085041"></circle>
-          <clipPath id="zt-pp"><circle cx="50" cy="50" r="50"></circle></clipPath>
-          <clipPath id="zt-pp2"><rect x="10" y="5" width="80" height="48"></rect></clipPath>
-          <clipPath id="zb-pp2"><rect x="10" y="53" width="80" height="48"></rect></clipPath>
-          <text x="8" y="96" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="92" font-weight="900" fill="#1D9E75" clip-path="url(#zt-pp2)">Z</text>
-          <text x="8" y="96" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="92" font-weight="900" fill="#FAC775" clip-path="url(#zb-pp2)">Z</text>
-          <rect x="8" y="50" width="68" height="3" fill="#085041"></rect>
-        </svg>

@@ -1,9 +1,0 @@
-<svg id="svg-stack-dk" width="180" height="160" viewBox="0 0 180 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <clipPath id="zt-sd"><rect x="18" y="0" width="90" height="60"></rect></clipPath>
-          <clipPath id="zb-sd"><rect x="18" y="60" width="90" height="60"></rect></clipPath>
-          <text x="18" y="110" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="110" font-weight="900" fill="#1D9E75" clip-path="url(#zt-sd)">Z</text>
-          <text x="18" y="110" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="110" font-weight="900" fill="#FAC775" clip-path="url(#zb-sd)">Z</text>
-          <rect x="18" y="59" width="84" height="3" fill="#085041"></rect>
-          <text x="90" y="140" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="22" font-weight="900" fill="#ffffff" letter-spacing="-0.5">Zenzele</text>
-          <text x="90" y="158" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="11" font-weight="200" fill="#9FE1CB" letter-spacing="5">GUIDE</text>
-        </svg>
