@@ -1,0 +1,13 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#085041"/>
+  <text x="880" y="720" font-family="-apple-system,Helvetica,sans-serif" font-size="780" font-weight="900" fill="#1D9E75" opacity="0.07">Z</text>
+  <circle cx="190" cy="300" r="44" fill="#9FE1CB"/>
+  <circle cx="250" cy="210" r="56" fill="#FAC775"/>
+  <circle cx="310" cy="300" r="44" fill="#1D9E75"/>
+  <path d="M140 388 Q250 270 360 388" stroke="#ffffff" stroke-width="24" fill="none" stroke-linecap="round"/>
+  <text x="450" y="270" font-family="-apple-system,Helvetica,sans-serif" font-size="76" font-weight="900" fill="#ffffff" letter-spacing="-1">Zenzele Guide</text>
+  <rect x="454" y="296" width="430" height="6" rx="3" fill="#FAC775"/>
+  <text x="454" y="356" font-family="-apple-system,Helvetica,sans-serif" font-size="32" font-weight="300" fill="#9FE1CB" letter-spacing="1">Do it yourself — but not alone.</text>
+  <text x="454" y="406" font-family="-apple-system,Helvetica,sans-serif" font-size="24" font-weight="400" fill="#5DCAA5">AI-powered varsity, bursary &amp; career guidance for SA students</text>
+  <text x="454" y="452" font-family="-apple-system,Helvetica,sans-serif" font-size="20" font-weight="400" fill="#5DCAA5" opacity="0.7">zenzeleguide.co.za</text>
+</svg>
