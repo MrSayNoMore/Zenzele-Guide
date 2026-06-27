@@ -107,6 +107,12 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        {/* Google AdSense loader */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4662305583164520"
+          crossOrigin="anonymous"
+        />
       </head>
       <body>
         {children}

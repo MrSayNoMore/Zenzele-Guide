@@ -1,0 +1,8 @@
+<svg width="180" height="170" viewBox="0 0 180 170" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="74" cy="48" r="11" fill="#9FE1CB"/>
+  <circle cx="90" cy="20" r="13" fill="#FAC775"/>
+  <circle cx="106" cy="48" r="11" fill="#1D9E75"/>
+  <path d="M60 72 Q90 46 120 72" stroke="#085041" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <text x="90" y="130" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="26" font-weight="900" fill="#085041" letter-spacing="-0.5">Zenzele</text>
+  <text x="90" y="152" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Helvetica,sans-serif" font-size="12" font-weight="200" fill="#1D9E75" letter-spacing="6">GUIDE</text>
+</svg>
