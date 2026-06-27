@@ -2,44 +2,44 @@
 
 > "Do it yourself — but not alone."
 
-AI-powered student guidance & careers platform for South African matric students.
-Calculates APS scores and matches students to universities, courses, bursaries,
-and jobs. Target launch: **August 2026** (ahead of the Nov–Jan matric-results season).
+A free, mobile-first **decision engine** for South African post-matric students.
+A learner answers a few questions and gets a ranked, **explainable** list of the
+universities, courses, bursaries, and TVET programmes they actually qualify for —
+with per-institution APS computation, NSFAS eligibility, and deadlines.
 
 ## Repository layout
 
+The application lives in the **`ZenzeleGuide/`** subfolder:
+
 ```
-.
-├── ZenzeleGuide/
-│   ├── web/        # Main web app — React Router v7 + Hono on Cloudflare Workers
-│   ├── mobile/     # Expo / React Native app
-│   └── shared/     # Shared code
-├── Brand Images/   # Logos, icons, social assets + brand kit
-└── ZenzeleGuide_BusinessPlan.pdf
+ZenzeleGuide/
+├── src/                # TanStack Start app (routes, components, engine, integrations)
+├── supabase/           # Postgres migrations (schema, RLS, rules)
+├── docs/               # Product + architecture + database + match-engine specs
+├── package.json
+└── vite.config.ts      # TanStack Start + Nitro (Cloudflare Workers) build
 ```
 
-The deployable site is **`ZenzeleGuide/web`** — set that as the build root in
-Cloudflare. Database is Supabase Postgres (reached via Cloudflare Hyperdrive on
-Workers); AI matching runs through the Claude API.
+## Stack
 
-## Web app — local development
+TanStack Start (React 19 SSR + Nitro) · Vite · **Supabase** (Postgres + Auth +
+Storage) · shadcn/ui · Tailwind v4 · TanStack Query · Zod. Deploys to
+**Cloudflare Workers**.
+
+## Local development
 
 ```bash
-cd ZenzeleGuide/web
+cd ZenzeleGuide
 npm install
-cp .env.example .env   # then fill in your own values
+cp .env.example .env   # fill in your Supabase values
 npm run dev
 ```
 
-## Deployment
+## Deploy — GitHub → Cloudflare Workers
 
-See [`ZenzeleGuide/web/CLOUDFLARE-DEPLOY.md`](ZenzeleGuide/web/CLOUDFLARE-DEPLOY.md)
-for the Cloudflare deploy steps (Hyperdrive setup, bindings, custom domain, AdSense).
+The Cloudflare Workers Git integration builds and deploys on every push.
 
-## Environment variables
-
-Never commit real secrets. Each `.env` is git-ignored; copy the matching
-`.env.example` and fill in your own values. The web app needs:
-
-- `ANYTHING_PROJECT_TOKEN` — create.xyz project token
-- `DATABASE_URL` — Supabase Postgres connection string (local dev)
+- **Root directory:** `ZenzeleGuide`
+- **Build command:** `npm run build` (Vite + Nitro `cloudflare-module` preset → `.output/`)
+- **Deploy:** uses the generated `.output/server/wrangler.json` (`wrangler deploy`)
+- Set the Supabase env vars (see `ZenzeleGuide/.env.example`) in the Worker settings.

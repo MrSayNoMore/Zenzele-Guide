@@ -62,3 +62,8 @@ caches/
 .DS_Store
 Thumbs.db
 ehthumbs.db
+.output/
+.nitro/
+
+# Office temp lock files
+~$*
