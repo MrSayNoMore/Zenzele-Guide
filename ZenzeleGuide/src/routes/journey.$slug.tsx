@@ -48,6 +48,72 @@ const journeys: Record<string, Info> = {
       "Clear entry requirements — no guesswork.",
     ],
   },
+  "grade-11": {
+    label: "Grade 11",
+    title: "Grade 11 — set yourself up now",
+    description:
+      "The marks you lock in this year shape what you can do after matric. We're building a tool to show you where your current marks point, and how to lift your APS in time.",
+    points: [
+      "See the universities and courses your current marks reach.",
+      "Find out exactly how many points you still need.",
+      "Keep the most doors open before final exams.",
+    ],
+  },
+  "grade-10": {
+    label: "Grade 10",
+    title: "Grade 10 — choose subjects with the end in mind",
+    description:
+      "Subject choice quietly decides which careers stay open to you. We're building a guide that works backwards — from the career you want to the subjects you should take.",
+    points: [
+      "Pick a career and see the subjects it needs.",
+      "Avoid closing doors by accident.",
+      "Plan for the APS your dream course asks for.",
+    ],
+  },
+  "gap-year": {
+    label: "Gap year",
+    title: "Taking a gap year — make it count",
+    description:
+      "A gap year can be a launchpad, not a detour. We're gathering learnerships, short courses, and other paths so your year off still moves you forward.",
+    points: [
+      "Find learnerships and skills programmes.",
+      "Short courses that build toward your goal.",
+      "Plan your application for the next intake.",
+    ],
+  },
+  learnership: {
+    label: "Learnership",
+    title: "Learnerships — earn while you learn",
+    description:
+      "We're collecting SETA-accredited learnerships across South Africa, so you can find a paid, practical path to a real qualification.",
+    points: [
+      "Search learnerships by field and province.",
+      "See stipends and entry requirements up front.",
+      "Apply directly — no fees, ever.",
+    ],
+  },
+  graduate: {
+    label: "Graduate",
+    title: "Just graduated — what's next",
+    description:
+      "Finished your qualification? We're building a hub for graduate programmes, internships, and first jobs so your next step is as clear as your first one was.",
+    points: [
+      "Graduate programmes and internships.",
+      "Entry-level roles that match your field.",
+      "Tips for your first real applications.",
+    ],
+  },
+  university: {
+    label: "At university",
+    title: "At university — fund the next step",
+    description:
+      "Already studying? We're adding postgraduate funding and career planning so your journey doesn't stop at first year.",
+    points: [
+      "Postgrad bursaries and funding.",
+      "Plan from your degree to a career.",
+      "Stay ahead of funding deadlines.",
+    ],
+  },
 };
 
 export const Route = createFileRoute("/journey/$slug")({

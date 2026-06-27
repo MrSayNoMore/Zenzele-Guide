@@ -218,10 +218,13 @@ function Landing() {
               <ul className="mt-5 flex flex-wrap gap-2.5">
                 {soon.map((j) => (
                   <li key={j.slug}>
-                    <span className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#d7ece4] bg-white px-4 text-sm font-semibold text-[#3f5b51]">
+                    <a
+                      href={`/journey/${j.slug}`}
+                      className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#d7ece4] bg-white px-4 text-sm font-semibold text-[#3f5b51] transition hover:border-[#1D9E75] hover:bg-[var(--brand-izolo)] hover:text-[#085041] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FAC775]"
+                    >
                       <j.Icon className="h-4 w-4 text-[#1D9E75]" />
                       {j.title.replace(/^I('m| want| just| need|'m taking) /, "")}
-                    </span>
+                    </a>
                   </li>
                 ))}
               </ul>
