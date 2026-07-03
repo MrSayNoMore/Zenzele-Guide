@@ -196,21 +196,29 @@ function Grade12JourneyPage() {
       const anonId = localStorage.getItem("anon_id") || crypto.randomUUID();
       localStorage.setItem("anon_id", anonId);
 
+      const profile = {
+        ...data,
+        subjects,
+      };
+
+      console.log("Submitting profile:", profile);
+
       const result = await computeGrade12Match({
         data: {
-          profile: {
-            ...data,
-            subjects,
-          },
+          profile,
           anonId,
           userId: null,
         },
       });
 
+      console.log("Got result:", result);
+
       // Navigate to results page
       window.location.href = `/results/${result.resultId}`;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      console.error("Submission error:", err);
+      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred. Please try again.";
+      setError(errorMessage);
       setIsSubmitting(false);
     }
   };

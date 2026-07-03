@@ -144,6 +144,20 @@ export const computeGrade12Match = createServerFn({ method: "POST" })
       data.userId ?? null
     );
 
+    // Store in memory for demo retrieval if database unavailable
+    const { storeDemoResult } = await import("./journey.server");
+    storeDemoResult(id, {
+      id,
+      journey: "grade_12",
+      inputs: profile,
+      output: result,
+      engine_version: ENGINE_VERSION,
+      aps_rule_version_ids: [defaultRule.rule_id],
+      nsfas_rule_version_id: null,
+      created_at: new Date().toISOString(),
+      share_slug,
+    });
+
     return {
       resultId: id,
       shareSlug: share_slug,
