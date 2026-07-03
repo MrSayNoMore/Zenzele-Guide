@@ -1,0 +1,57 @@
+[
+  {
+    "programme_id": "00000000-0000-0000-0000-000000003001",
+    "college_id": "00000000-0000-0000-0000-000000003101",
+    "college_name": "SAMPLE - TVET College Gauteng",
+    "college_province": "GP",
+    "name": "SAMPLE - NC(V) Engineering Studies",
+    "program_type": "ncv",
+    "nqf_level": 4,
+    "min_grade": 9,
+    "duration_years": 3,
+    "fields": ["engineering"],
+    "min_english_level": 3,
+    "min_maths_level": 3
+  },
+  {
+    "programme_id": "00000000-0000-0000-0000-000000003002",
+    "college_id": "00000000-0000-0000-0000-000000003101",
+    "college_name": "SAMPLE - TVET College Gauteng",
+    "college_province": "GP",
+    "name": "SAMPLE - Report 191 Business Management",
+    "program_type": "report_191",
+    "nqf_level": 5,
+    "min_grade": 12,
+    "duration_years": 1,
+    "fields": ["commerce"],
+    "min_english_level": 4,
+    "min_maths_lit_level": 4
+  },
+  {
+    "programme_id": "00000000-0000-0000-0000-000000003003",
+    "college_id": "00000000-0000-0000-0000-000000003102",
+    "college_name": "SAMPLE - TVET College Limpopo",
+    "college_province": "LP",
+    "name": "SAMPLE - NC(V) Tourism & Hospitality",
+    "program_type": "ncv",
+    "nqf_level": 4,
+    "min_grade": 9,
+    "duration_years": 3,
+    "fields": ["tourism"],
+    "min_english_level": 3
+  },
+  {
+    "programme_id": "00000000-0000-0000-0000-000000003004",
+    "college_id": "00000000-0000-0000-0000-000000003102",
+    "college_name": "SAMPLE - TVET College Limpopo",
+    "college_province": "LP",
+    "name": "SAMPLE - Report 191 Electrical Engineering",
+    "program_type": "report_191",
+    "nqf_level": 5,
+    "min_grade": 12,
+    "duration_years": 1,
+    "fields": ["engineering"],
+    "min_english_level": 4,
+    "min_maths_level": 3
+  }
+]

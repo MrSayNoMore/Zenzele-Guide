@@ -1,0 +1,26 @@
+{
+  "rule_id": "00000000-0000-0000-0000-000000000001",
+  "university_id": "00000000-0000-0000-0000-000000000001",
+  "version": 1,
+  "effective_from": "2026-01-01",
+  "source_url": "https://example.com/SAMPLE-uct-aps-rules",
+  "conversion": [
+    { "min_pct": 80, "max_pct": 100, "nsc_level": 7, "aps_points": 8 },
+    { "min_pct": 70, "max_pct": 79, "nsc_level": 6, "aps_points": 7 },
+    { "min_pct": 60, "max_pct": 69, "nsc_level": 5, "aps_points": 6 },
+    { "min_pct": 50, "max_pct": 59, "nsc_level": 4, "aps_points": 5 },
+    { "min_pct": 40, "max_pct": 49, "nsc_level": 3, "aps_points": 4 },
+    { "min_pct": 30, "max_pct": 39, "nsc_level": 2, "aps_points": 3 },
+    { "min_pct": 0, "max_pct": 29, "nsc_level": 1, "aps_points": 1 }
+  ],
+  "life_orientation": {
+    "treatment": "half_weight",
+    "cap_points": 3
+  },
+  "top_n": 6,
+  "bonuses": [],
+  "borderline": {
+    "aps_within": 2,
+    "subject_levels_short": 1
+  }
+}

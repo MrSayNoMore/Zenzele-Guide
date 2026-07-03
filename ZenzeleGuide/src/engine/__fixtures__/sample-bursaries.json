@@ -1,0 +1,61 @@
+[
+  {
+    "bursary_id": "00000000-0000-0000-0000-000000002001",
+    "name": "SAMPLE - Engineering Excellence Bursary",
+    "provider": "SAMPLE - Engineering Corp",
+    "fields_of_study": ["engineering"],
+    "eligibility": {
+      "citizenship": ["sa_citizen"],
+      "min_percentage_avg": 65,
+      "household_income_max": 600000
+    },
+    "cycles": [
+      {
+        "cycle_id": "00000000-0000-0000-0000-000000002101",
+        "year": 2027,
+        "open_date": "2026-03-01",
+        "close_date": "2026-09-30"
+      }
+    ],
+    "website_url": "https://example.com/SAMPLE-bursary"
+  },
+  {
+    "bursary_id": "00000000-0000-0000-0000-000000002002",
+    "name": "SAMPLE - Teacher Training Bursary",
+    "provider": "SAMPLE - Education Foundation",
+    "fields_of_study": ["education"],
+    "eligibility": {
+      "citizenship": ["sa_citizen", "sa_permanent_resident"],
+      "provinces": ["GP", "KZN", "WC"]
+    },
+    "cycles": [
+      {
+        "cycle_id": "00000000-0000-0000-0000-000000002201",
+        "year": 2027,
+        "open_date": "2026-01-15",
+        "close_date": "2026-07-15"
+      }
+    ],
+    "website_url": "https://example.com/SAMPLE-teacher-bursary"
+  },
+  {
+    "bursary_id": "00000000-0000-0000-0000-000000002003",
+    "name": "SAMPLE - Disability Inclusion Scholarship",
+    "provider": "SAMPLE - Access Foundation",
+    "fields_of_study": ["health", "science", "it"],
+    "eligibility": {
+      "citizenship": ["sa_citizen"],
+      "demographics": ["disability"],
+      "household_income_max": 350000
+    },
+    "cycles": [
+      {
+        "cycle_id": "00000000-0000-0000-0000-000000002301",
+        "year": 2027,
+        "open_date": "2026-04-01",
+        "close_date": "2026-10-31"
+      }
+    ],
+    "website_url": "https://example.com/SAMPLE-disability-scholarship"
+  }
+]

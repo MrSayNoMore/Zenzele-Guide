@@ -1,0 +1,12 @@
+{
+  "rule_id": "00000000-0000-0000-0000-000000000101",
+  "version": 1,
+  "effective_from": "2026-01-01",
+  "source_url": "https://example.com/SAMPLE-nsfas-rules",
+  "citizenship_eligible": ["sa_citizen", "sa_permanent_resident"],
+  "household_income": {
+    "standard_max_zar": 350000,
+    "disability_max_zar": 600000
+  },
+  "sassa_auto_qualifies": true
+}

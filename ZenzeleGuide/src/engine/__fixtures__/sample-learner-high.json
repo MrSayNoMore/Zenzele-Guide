@@ -1,0 +1,16 @@
+{
+  "citizenship": "sa_citizen",
+  "household_income_band": "le_350k",
+  "disability": false,
+  "province": "GP",
+  "subjects": [
+    { "code": "english_hl", "percentage": 72, "label": "English Home Language" },
+    { "code": "afrikaans_fal", "percentage": 68, "label": "Afrikaans First Additional" },
+    { "code": "mathematics", "percentage": 78, "label": "Mathematics" },
+    { "code": "life_orientation", "percentage": 81, "label": "Life Orientation" },
+    { "code": "physical_sciences", "percentage": 74, "label": "Physical Sciences" },
+    { "code": "life_sciences", "percentage": 71, "label": "Life Sciences" },
+    { "code": "geography", "percentage": 69, "label": "Geography" }
+  ],
+  "intended_field": "engineering"
+}

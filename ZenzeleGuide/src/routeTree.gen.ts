@@ -18,6 +18,8 @@ import { Route as BursariesRouteImport } from './routes/bursaries'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ResultsResultIdRouteImport } from './routes/results.$resultId'
+import { Route as JourneyGrade12RouteImport } from './routes/journey.grade-12'
 import { Route as JourneySlugRouteImport } from './routes/journey.$slug'
 
 const UniversitiesRoute = UniversitiesRouteImport.update({
@@ -65,6 +67,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResultsResultIdRoute = ResultsResultIdRouteImport.update({
+  id: '/results/$resultId',
+  path: '/results/$resultId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JourneyGrade12Route = JourneyGrade12RouteImport.update({
+  id: '/journey/grade-12',
+  path: '/journey/grade-12',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JourneySlugRoute = JourneySlugRouteImport.update({
   id: '/journey/$slug',
   path: '/journey/$slug',
@@ -82,6 +94,8 @@ export interface FileRoutesByFullPath {
   '/tvet-colleges': typeof TvetCollegesRoute
   '/universities': typeof UniversitiesRoute
   '/journey/$slug': typeof JourneySlugRoute
+  '/journey/grade-12': typeof JourneyGrade12Route
+  '/results/$resultId': typeof ResultsResultIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -94,6 +108,8 @@ export interface FileRoutesByTo {
   '/tvet-colleges': typeof TvetCollegesRoute
   '/universities': typeof UniversitiesRoute
   '/journey/$slug': typeof JourneySlugRoute
+  '/journey/grade-12': typeof JourneyGrade12Route
+  '/results/$resultId': typeof ResultsResultIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,6 +123,8 @@ export interface FileRoutesById {
   '/tvet-colleges': typeof TvetCollegesRoute
   '/universities': typeof UniversitiesRoute
   '/journey/$slug': typeof JourneySlugRoute
+  '/journey/grade-12': typeof JourneyGrade12Route
+  '/results/$resultId': typeof ResultsResultIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +139,8 @@ export interface FileRouteTypes {
     | '/tvet-colleges'
     | '/universities'
     | '/journey/$slug'
+    | '/journey/grade-12'
+    | '/results/$resultId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,6 +153,8 @@ export interface FileRouteTypes {
     | '/tvet-colleges'
     | '/universities'
     | '/journey/$slug'
+    | '/journey/grade-12'
+    | '/results/$resultId'
   id:
     | '__root__'
     | '/'
@@ -145,6 +167,8 @@ export interface FileRouteTypes {
     | '/tvet-colleges'
     | '/universities'
     | '/journey/$slug'
+    | '/journey/grade-12'
+    | '/results/$resultId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -158,6 +182,8 @@ export interface RootRouteChildren {
   TvetCollegesRoute: typeof TvetCollegesRoute
   UniversitiesRoute: typeof UniversitiesRoute
   JourneySlugRoute: typeof JourneySlugRoute
+  JourneyGrade12Route: typeof JourneyGrade12Route
+  ResultsResultIdRoute: typeof ResultsResultIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -225,6 +251,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/results/$resultId': {
+      id: '/results/$resultId'
+      path: '/results/$resultId'
+      fullPath: '/results/$resultId'
+      preLoaderRoute: typeof ResultsResultIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/journey/grade-12': {
+      id: '/journey/grade-12'
+      path: '/journey/grade-12'
+      fullPath: '/journey/grade-12'
+      preLoaderRoute: typeof JourneyGrade12RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/journey/$slug': {
       id: '/journey/$slug'
       path: '/journey/$slug'
@@ -246,6 +286,8 @@ const rootRouteChildren: RootRouteChildren = {
   TvetCollegesRoute: TvetCollegesRoute,
   UniversitiesRoute: UniversitiesRoute,
   JourneySlugRoute: JourneySlugRoute,
+  JourneyGrade12Route: JourneyGrade12Route,
+  ResultsResultIdRoute: ResultsResultIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

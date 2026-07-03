@@ -1,0 +1,16 @@
+{
+  "citizenship": "sa_citizen",
+  "household_income_band": "sassa",
+  "disability": false,
+  "province": "LP",
+  "subjects": [
+    { "code": "english_hl", "percentage": 52, "label": "English Home Language" },
+    { "code": "sesotho_fal", "percentage": 48, "label": "Sesotho First Additional" },
+    { "code": "mathematical_literacy", "percentage": 45, "label": "Mathematical Literacy" },
+    { "code": "life_orientation", "percentage": 55, "label": "Life Orientation" },
+    { "code": "tourism", "percentage": 50, "label": "Tourism" },
+    { "code": "business_studies", "percentage": 47, "label": "Business Studies" },
+    { "code": "life_sciences", "percentage": 43, "label": "Life Sciences" }
+  ],
+  "intended_field": "commerce"
+}

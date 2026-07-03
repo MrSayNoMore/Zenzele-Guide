@@ -1,0 +1,55 @@
+[
+  {
+    "course_id": "00000000-0000-0000-0000-000000001001",
+    "university_id": "00000000-0000-0000-0000-000000000001",
+    "course_name": "SAMPLE - BSc Engineering",
+    "faculty_name": "SAMPLE - Faculty of Engineering",
+    "university_name": "SAMPLE - University A",
+    "min_aps": 38,
+    "required_subjects": [
+      { "code": "mathematics", "min_level": 6 },
+      { "code": "physical_sciences", "min_level": 5 },
+      { "code": "english_hl", "min_level": 4, "alternative": { "code": "english_fal", "min_level": 5 } }
+    ]
+  },
+  {
+    "course_id": "00000000-0000-0000-0000-000000001002",
+    "university_id": "00000000-0000-0000-0000-000000000001",
+    "course_name": "SAMPLE - MBChB Medicine",
+    "faculty_name": "SAMPLE - Faculty of Health Sciences",
+    "university_name": "SAMPLE - University A",
+    "min_aps": 42,
+    "required_subjects": [
+      { "code": "mathematics", "min_level": 6 },
+      { "code": "physical_sciences", "min_level": 6 },
+      { "code": "english_hl", "min_level": 5 }
+    ],
+    "nbt": {
+      "aql_min": 70,
+      "mat_min": 70
+    }
+  },
+  {
+    "course_id": "00000000-0000-0000-0000-000000001003",
+    "university_id": "00000000-0000-0000-0000-000000000001",
+    "course_name": "SAMPLE - BCom Accounting",
+    "faculty_name": "SAMPLE - Faculty of Commerce",
+    "university_name": "SAMPLE - University A",
+    "min_aps": 32,
+    "required_subjects": [
+      { "code": "mathematics", "min_level": 4, "alternative": { "code": "mathematical_literacy", "min_level": 6 } },
+      { "code": "english_hl", "min_level": 4 }
+    ]
+  },
+  {
+    "course_id": "00000000-0000-0000-0000-000000001004",
+    "university_id": "00000000-0000-0000-0000-000000000001",
+    "course_name": "SAMPLE - BA Humanities",
+    "faculty_name": "SAMPLE - Faculty of Humanities",
+    "university_name": "SAMPLE - University A",
+    "min_aps": 28,
+    "required_subjects": [
+      { "code": "english_hl", "min_level": 4 }
+    ]
+  }
+]
