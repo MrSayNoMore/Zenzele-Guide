@@ -16,11 +16,13 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as CareersRouteImport } from './routes/careers'
 import { Route as BursariesRouteImport } from './routes/bursaries'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ResultsResultIdRouteImport } from './routes/results.$resultId'
 import { Route as JourneyGrade12RouteImport } from './routes/journey.grade-12'
 import { Route as JourneySlugRouteImport } from './routes/journey.$slug'
+import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 
 const UniversitiesRoute = UniversitiesRouteImport.update({
   id: '/universities',
@@ -57,6 +59,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -82,10 +89,16 @@ const JourneySlugRoute = JourneySlugRouteImport.update({
   path: '/journey/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminDashboardRoute = AdminDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/bursaries': typeof BursariesRoute
   '/careers': typeof CareersRoute
@@ -93,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/tvet-colleges': typeof TvetCollegesRoute
   '/universities': typeof UniversitiesRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
   '/journey/$slug': typeof JourneySlugRoute
   '/journey/grade-12': typeof JourneyGrade12Route
   '/results/$resultId': typeof ResultsResultIdRoute
@@ -100,6 +114,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/bursaries': typeof BursariesRoute
   '/careers': typeof CareersRoute
@@ -107,6 +122,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/tvet-colleges': typeof TvetCollegesRoute
   '/universities': typeof UniversitiesRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
   '/journey/$slug': typeof JourneySlugRoute
   '/journey/grade-12': typeof JourneyGrade12Route
   '/results/$resultId': typeof ResultsResultIdRoute
@@ -115,6 +131,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/bursaries': typeof BursariesRoute
   '/careers': typeof CareersRoute
@@ -122,6 +139,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/tvet-colleges': typeof TvetCollegesRoute
   '/universities': typeof UniversitiesRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
   '/journey/$slug': typeof JourneySlugRoute
   '/journey/grade-12': typeof JourneyGrade12Route
   '/results/$resultId': typeof ResultsResultIdRoute
@@ -131,6 +149,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/admin'
     | '/auth'
     | '/bursaries'
     | '/careers'
@@ -138,6 +157,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/tvet-colleges'
     | '/universities'
+    | '/admin/dashboard'
     | '/journey/$slug'
     | '/journey/grade-12'
     | '/results/$resultId'
@@ -145,6 +165,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/admin'
     | '/auth'
     | '/bursaries'
     | '/careers'
@@ -152,6 +173,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/tvet-colleges'
     | '/universities'
+    | '/admin/dashboard'
     | '/journey/$slug'
     | '/journey/grade-12'
     | '/results/$resultId'
@@ -159,6 +181,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/admin'
     | '/auth'
     | '/bursaries'
     | '/careers'
@@ -166,6 +189,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/tvet-colleges'
     | '/universities'
+    | '/admin/dashboard'
     | '/journey/$slug'
     | '/journey/grade-12'
     | '/results/$resultId'
@@ -174,6 +198,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
   BursariesRoute: typeof BursariesRoute
   CareersRoute: typeof CareersRoute
@@ -237,6 +262,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -272,12 +304,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JourneySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/dashboard': {
+      id: '/admin/dashboard'
+      path: '/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AdminDashboardRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
+
+interface AdminRouteChildren {
+  AdminDashboardRoute: typeof AdminDashboardRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminDashboardRoute: AdminDashboardRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
   BursariesRoute: BursariesRoute,
   CareersRoute: CareersRoute,
