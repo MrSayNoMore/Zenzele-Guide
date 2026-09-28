@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
-import { signOut, useAuth } from "@/hooks/use-auth";
+import { signOut, useAuth, useIsAdmin } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { CAREER_STAGES, careerStageLabel } from "@/lib/career";
 import {
@@ -141,6 +141,7 @@ function Account({ email }: { email: string }) {
         </button>
       </div>
 
+      <AdminShortcut />
       <ProfileCard />
 
       {/* Results */}
@@ -432,5 +433,23 @@ function ProfileCard() {
         </form>
       )}
     </section>
+  );
+}
+
+/** Staff see a way into the admin panel; learners never see this. */
+function AdminShortcut() {
+  const { isAdmin } = useIsAdmin();
+  if (!isAdmin) return null;
+  return (
+    <Link
+      to="/admin/dashboard"
+      className="mt-8 flex items-center justify-between gap-4 rounded-lg bg-[var(--brand-umhlaba)] p-5 text-white hover:opacity-95"
+    >
+      <span>
+        <span className="block font-semibold">Admin panel</span>
+        <span className="block text-sm text-white/75">Manage universities, courses, bursaries and subjects.</span>
+      </span>
+      <ArrowRight className="h-5 w-5 shrink-0" />
+    </Link>
   );
 }

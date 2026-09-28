@@ -79,69 +79,6 @@ function getDefaultApsRule(): ApsRuleSet {
   };
 }
 
-/**
- * Get default courses for demo/testing when database is empty
- */
-function getDefaultCourses() {
-  return [
-    {
-      course_id: "demo-1",
-      course_name: "SAMPLE - BSc Engineering",
-      slug: "sample-bsc-engineering",
-      min_aps: 38,
-      requires_nbt: false,
-      university_id: "demo-uni",
-      university_name: "SAMPLE - University A",
-      faculty_name: "SAMPLE - Faculty of Engineering",
-      required_subjects: [
-        { code: "mathematics", min_level: 6 },
-        { code: "physical_sciences", min_level: 5 },
-        { code: "english_hl", min_level: 4 },
-      ],
-    },
-    {
-      course_id: "demo-2",
-      course_name: "SAMPLE - BCom Accounting",
-      slug: "sample-bcom-accounting",
-      min_aps: 32,
-      requires_nbt: false,
-      university_id: "demo-uni",
-      university_name: "SAMPLE - University A",
-      faculty_name: "SAMPLE - Faculty of Commerce",
-      required_subjects: [
-        { code: "mathematics", min_level: 4 },
-        { code: "english_hl", min_level: 4 },
-      ],
-    },
-    {
-      course_id: "demo-3",
-      course_name: "SAMPLE - BA Humanities",
-      slug: "sample-ba-humanities",
-      min_aps: 28,
-      requires_nbt: false,
-      university_id: "demo-uni",
-      university_name: "SAMPLE - University A",
-      faculty_name: "SAMPLE - Faculty of Humanities",
-      required_subjects: [
-        { code: "english_hl", min_level: 4 },
-      ],
-    },
-    {
-      course_id: "demo-4",
-      course_name: "SAMPLE - BSc Computer Science",
-      slug: "sample-bsc-computer-science",
-      min_aps: 34,
-      requires_nbt: false,
-      university_id: "demo-uni",
-      university_name: "SAMPLE - University A",
-      faculty_name: "SAMPLE - Faculty of Science",
-      required_subjects: [
-        { code: "mathematics", min_level: 5 },
-        { code: "english_hl", min_level: 4 },
-      ],
-    },
-  ];
-}
 
 /**
  * Fetches all currently effective APS rules
@@ -253,12 +190,11 @@ export async function fetchPublishedCourses() {
 
     if (error) {
       console.error("Error fetching courses:", error);
-      return getDefaultCourses();
+      return [];
     }
 
     if (!courses || courses.length === 0) {
-      console.log("No courses in database, using defaults");
-      return getDefaultCourses();
+      return [];
     }
 
     // Fetch requirements for each course
@@ -296,7 +232,7 @@ export async function fetchPublishedCourses() {
     }));
   } catch (err) {
     console.error("Exception fetching courses:", err);
-    return getDefaultCourses();
+    return [];
   }
 }
 

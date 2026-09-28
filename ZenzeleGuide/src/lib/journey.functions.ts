@@ -88,7 +88,7 @@ export const computeGrade12Match = createServerFn({ method: "POST" })
     }
 
     if (courses.length === 0) {
-      throw new Error("No courses available");
+      throw new Error("We're still adding verified university courses. Please check back soon.");
     }
 
     // Use the first/default APS rule for now
@@ -239,7 +239,7 @@ export const computeBursaryMatch = createServerFn({ method: "POST" })
 
     const bursaries = await fetchPublishedBursaries();
     if (bursaries.length === 0) {
-      throw new Error("No bursaries available");
+      throw new Error("We're still adding verified bursaries. Please check back soon.");
     }
 
     // Use current date as reference
@@ -301,7 +301,7 @@ export const computeTvetMatch = createServerFn({ method: "POST" })
 
     const programmes = await fetchPublishedTvetProgrammes();
     if (programmes.length === 0) {
-      throw new Error("No TVET programmes available");
+      throw new Error("We're still adding verified TVET programmes. Please check back soon.");
     }
 
     // Match TVET programmes

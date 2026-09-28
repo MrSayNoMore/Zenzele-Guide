@@ -73,8 +73,9 @@ export function hasValidSubjectCombination(profile: LearnerProfile): boolean {
   if (subjects.length < 7) return false;
 
   // Must have at least one language
-  const hasLanguage = subjects.some((s) =>
-    LANGUAGE_CODES.some((code) => s.code === code),
+  // Any official language counts: Home Language (_hl) or First Additional (_fal).
+  const hasLanguage = subjects.some(
+    (s) => LANGUAGE_CODES.includes(s.code) || s.code.endsWith("_hl") || s.code.endsWith("_fal"),
   );
   if (!hasLanguage) return false;
 

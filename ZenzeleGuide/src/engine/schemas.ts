@@ -1,37 +1,11 @@
 import { z } from "zod";
 
 // NSC Subject codes
-export const SubjectCode = z.enum([
-  "english_hl",
-  "english_fal",
-  "afrikaans_hl",
-  "afrikaans_fal",
-  "isizulu_hl",
-  "isizulu_fal",
-  "sesotho_hl",
-  "sesotho_fal",
-  "mathematics",
-  "mathematical_literacy",
-  "technical_mathematics",
-  "life_orientation",
-  "physical_sciences",
-  "life_sciences",
-  "geography",
-  "history",
-  "accounting",
-  "business_studies",
-  "economics",
-  "agricultural_sciences",
-  "consumer_studies",
-  "tourism",
-  "information_technology",
-  "computer_applications_technology",
-  "engineering_graphics_design",
-  "visual_arts",
-  "dramatic_arts",
-  "music",
-  "other",
-]);
+// NSC subject code, e.g. "mathematics" or "english_hl". Subjects live in the
+// `subjects` table and admins can add new ones, so any well-formed code is
+// accepted. Codes the engine treats specially: life_orientation, and those in
+// MATH_CODES / LANGUAGE_CODES (shared/subject-utils.ts).
+export const SubjectCode = z.string().regex(/^[a-z][a-z0-9_]{1,59}$/, "Invalid subject code");
 export type SubjectCode = z.infer<typeof SubjectCode>;
 
 // Single subject mark

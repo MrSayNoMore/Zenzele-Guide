@@ -46,8 +46,8 @@ function AdminDashboard() {
       value: stats?.universities || 0,
       description: "Published institutions",
       icon: Building2,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
       href: "/admin/universities",
     },
     {
@@ -95,8 +95,8 @@ function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-gray-500">Overview of your content database</p>
+        <h1 className="font-sans text-2xl font-bold">Dashboard</h1>
+        <p className="text-muted-foreground">Overview of your content database</p>
       </div>
 
       {/* Pending drafts warning */}
@@ -130,8 +130,8 @@ function AdminDashboard() {
                     </div>
                     <div>
                       <p className="text-3xl font-bold">{stat.value}</p>
-                      <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                      <p className="text-xs text-gray-500">{stat.description}</p>
+                      <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                      <p className="text-xs text-muted-foreground">{stat.description}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -151,23 +151,23 @@ function AdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <a
               href="/admin/universities"
-              className="flex items-center gap-3 p-4 rounded-lg hover:bg-gray-50 border transition-colors"
+              className="flex items-center gap-3 p-4 rounded-lg hover:bg-muted border transition-colors"
             >
-              <Plus className="h-5 w-5 text-gray-400" />
+              <Plus className="h-5 w-5 text-muted-foreground" />
               <span>Add University</span>
             </a>
             <a
               href="/admin/courses"
-              className="flex items-center gap-3 p-4 rounded-lg hover:bg-gray-50 border transition-colors"
+              className="flex items-center gap-3 p-4 rounded-lg hover:bg-muted border transition-colors"
             >
-              <Plus className="h-5 w-5 text-gray-400" />
+              <Plus className="h-5 w-5 text-muted-foreground" />
               <span>Add Course</span>
             </a>
             <a
               href="/admin/bursaries"
-              className="flex items-center gap-3 p-4 rounded-lg hover:bg-gray-50 border transition-colors"
+              className="flex items-center gap-3 p-4 rounded-lg hover:bg-muted border transition-colors"
             >
-              <Plus className="h-5 w-5 text-gray-400" />
+              <Plus className="h-5 w-5 text-muted-foreground" />
               <span>Add Bursary</span>
             </a>
           </div>
