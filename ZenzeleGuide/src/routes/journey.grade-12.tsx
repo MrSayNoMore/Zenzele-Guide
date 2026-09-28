@@ -1,3 +1,4 @@
+import { useSubjectOptions, type SubjectOption } from "@/hooks/use-subjects";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,7 +29,8 @@ function useNavigateToResults() {
   };
 }
 
-const SUBJECT_CODES = [
+// Used until the subject list loads from the database (see useSubjectOptions).
+const FALLBACK_SUBJECTS: SubjectOption[] = [
   { code: "english_hl", label: "English Home Language" },
   { code: "english_fal", label: "English First Additional Language" },
   { code: "afrikaans_hl", label: "Afrikaans Home Language" },
@@ -49,9 +51,9 @@ const SUBJECT_CODES = [
   { code: "life_orientation", label: "Life Orientation" },
   { code: "information_technology", label: "Information Technology" },
   { code: "computer_applications_technology", label: "Computer Applications Technology" },
-  { code: "art", label: "Visual Arts" },
+  { code: "visual_arts", label: "Visual Arts" },
   { code: "music", label: "Music" },
-  { code: "drama", label: "Dramatic Arts" },
+  { code: "dramatic_arts", label: "Dramatic Arts" },
   { code: "tourism", label: "Tourism" },
   { code: "hospitality_studies", label: "Hospitality Studies" },
   { code: "civil_technology", label: "Civil Technology" },
@@ -59,7 +61,7 @@ const SUBJECT_CODES = [
   { code: "mechanical_technology", label: "Mechanical Technology" },
   { code: "agricultural_sciences", label: "Agricultural Sciences" },
   { code: "other", label: "Other" },
-] as const;
+];
 
 const PROVINCES = [
   { code: "EC", label: "Eastern Cape" },
@@ -118,6 +120,7 @@ const Grade12FormSchema = z.object({
 type Grade12FormValues = z.infer<typeof Grade12FormSchema>;
 
 function Grade12JourneyPage() {
+  const subjectOptions = useSubjectOptions(FALLBACK_SUBJECTS);
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -146,7 +149,7 @@ function Grade12JourneyPage() {
   const addSubject = () => {
     if (subjectEntries.length < 9) {
       const usedCodes = new Set(subjectEntries.map((s) => s.code));
-      const nextSubject = SUBJECT_CODES.find((s) => !usedCodes.has(s.code));
+      const nextSubject = subjectOptions.find((s) => !usedCodes.has(s.code));
       if (nextSubject) {
         setSubjectEntries([...subjectEntries, { code: nextSubject.code, label: nextSubject.label, percentage: 0 }]);
       }
@@ -162,7 +165,7 @@ function Grade12JourneyPage() {
   const updateSubject = (index: number, field: "code" | "percentage", value: string | number) => {
     const updated = [...subjectEntries];
     if (field === "code") {
-      const subject = SUBJECT_CODES.find((s) => s.code === value);
+      const subject = subjectOptions.find((s) => s.code === value);
       updated[index] = { code: value as string, label: subject?.label || "", percentage: updated[index].percentage };
     } else {
       updated[index] = { ...updated[index], percentage: value as number };
@@ -411,7 +414,7 @@ function Grade12JourneyPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {SUBJECT_CODES.filter(
+                          {subjectOptions.filter(
                             (s) => s.code === subject.code || !subjectEntries.some((e) => e.code === s.code)
                           ).map((s) => (
                             <SelectItem key={s.code} value={s.code}>

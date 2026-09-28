@@ -31,6 +31,7 @@ import { Route as AuthUpdatePasswordRouteImport } from './routes/auth_.update-pa
 import { Route as AuthConfirmRouteImport } from './routes/auth_.confirm'
 import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as AdminUniversitiesRouteImport } from './routes/admin.universities'
+import { Route as AdminSubjectsRouteImport } from './routes/admin.subjects'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminCoursesRouteImport } from './routes/admin.courses'
 import { Route as AdminBursariesRouteImport } from './routes/admin.bursaries'
@@ -145,6 +146,11 @@ const AdminUniversitiesRoute = AdminUniversitiesRouteImport.update({
   path: '/universities',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSubjectsRoute = AdminSubjectsRouteImport.update({
+  id: '/subjects',
+  path: '/subjects',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -176,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/admin/bursaries': typeof AdminBursariesRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/subjects': typeof AdminSubjectsRoute
   '/admin/universities': typeof AdminUniversitiesRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/confirm': typeof AuthConfirmRoute
@@ -202,6 +209,7 @@ export interface FileRoutesByTo {
   '/admin/bursaries': typeof AdminBursariesRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/subjects': typeof AdminSubjectsRoute
   '/admin/universities': typeof AdminUniversitiesRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/confirm': typeof AuthConfirmRoute
@@ -230,6 +238,7 @@ export interface FileRoutesById {
   '/admin/bursaries': typeof AdminBursariesRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/subjects': typeof AdminSubjectsRoute
   '/admin/universities': typeof AdminUniversitiesRoute
   '/auth_/callback': typeof AuthCallbackRoute
   '/auth_/confirm': typeof AuthConfirmRoute
@@ -259,6 +268,7 @@ export interface FileRouteTypes {
     | '/admin/bursaries'
     | '/admin/courses'
     | '/admin/dashboard'
+    | '/admin/subjects'
     | '/admin/universities'
     | '/auth/callback'
     | '/auth/confirm'
@@ -285,6 +295,7 @@ export interface FileRouteTypes {
     | '/admin/bursaries'
     | '/admin/courses'
     | '/admin/dashboard'
+    | '/admin/subjects'
     | '/admin/universities'
     | '/auth/callback'
     | '/auth/confirm'
@@ -312,6 +323,7 @@ export interface FileRouteTypes {
     | '/admin/bursaries'
     | '/admin/courses'
     | '/admin/dashboard'
+    | '/admin/subjects'
     | '/admin/universities'
     | '/auth_/callback'
     | '/auth_/confirm'
@@ -504,6 +516,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUniversitiesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/subjects': {
+      id: '/admin/subjects'
+      path: '/subjects'
+      fullPath: '/admin/subjects'
+      preLoaderRoute: typeof AdminSubjectsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/dashboard': {
       id: '/admin/dashboard'
       path: '/dashboard'
@@ -532,6 +551,7 @@ interface AdminRouteChildren {
   AdminBursariesRoute: typeof AdminBursariesRoute
   AdminCoursesRoute: typeof AdminCoursesRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminSubjectsRoute: typeof AdminSubjectsRoute
   AdminUniversitiesRoute: typeof AdminUniversitiesRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -540,6 +560,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminBursariesRoute: AdminBursariesRoute,
   AdminCoursesRoute: AdminCoursesRoute,
   AdminDashboardRoute: AdminDashboardRoute,
+  AdminSubjectsRoute: AdminSubjectsRoute,
   AdminUniversitiesRoute: AdminUniversitiesRoute,
   AdminIndexRoute: AdminIndexRoute,
 }

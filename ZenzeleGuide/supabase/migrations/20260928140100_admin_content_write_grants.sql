@@ -1,5 +1,5 @@
 -- =========================================================================
--- Let signed-in admins edit content from the admin editors.
+-- Let signed-in admins edit content (and NSC subjects) from the admin editors.
 --
 -- The content tables only granted SELECT to `authenticated`, so the existing
 -- "<table> admin all" RLS policies could never apply: Postgres checks table
@@ -30,3 +30,15 @@ TO authenticated;
 -- return true/false for a given user id.
 GRANT EXECUTE ON FUNCTION public.is_admin(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated;
+
+-- Subjects: admins can add and edit NSC subjects from /admin/subjects.
+-- Codes must match the engine's format (lowercase, digits, underscores).
+ALTER TABLE public.subjects DROP CONSTRAINT IF EXISTS subjects_code_format;
+ALTER TABLE public.subjects ADD CONSTRAINT subjects_code_format
+  CHECK (code ~ '^[a-z][a-z0-9_]{1,59}$');
+
+DROP POLICY IF EXISTS "subjects admin all" ON public.subjects;
+CREATE POLICY "subjects admin all" ON public.subjects FOR ALL TO authenticated
+  USING (public.is_admin(auth.uid())) WITH CHECK (public.is_admin(auth.uid()));
+
+GRANT INSERT, UPDATE, DELETE ON public.subjects TO authenticated;

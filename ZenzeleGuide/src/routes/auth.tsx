@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { userIsAdmin } from "@/hooks/use-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -121,7 +122,7 @@ function AuthPage() {
           setIsSignUp(false);
         }
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
@@ -129,7 +130,9 @@ function AuthPage() {
         if (signInError) {
           setError(signInError.message);
         } else {
-          navigate({ to: redirect as any });
+          // Staff land in the admin panel unless they were heading somewhere specific.
+          const staff = !search.redirect && (await userIsAdmin(signInData.user.id));
+          navigate({ href: staff ? "/admin/dashboard" : redirect });
         }
       }
     } catch (err) {

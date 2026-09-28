@@ -1,10 +1,11 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { Menu, UserRound } from "lucide-react";
 import { Logo } from "@/components/site/logo";
-import { signOut, useAuth } from "@/hooks/use-auth";
+import { signOut, useAuth, useIsAdmin } from "@/hooks/use-auth";
 
 export function SiteHeader() {
   const { user, loading } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const location = useLocation();
   const navigate = useNavigate();
   const signInHref = `/auth?redirect=${encodeURIComponent(location.pathname)}`;
@@ -30,6 +31,9 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           {!loading && user ? (
             <>
+              {isAdmin && (
+                <Link to="/admin/dashboard" className="hidden md:inline-flex items-center rounded-md bg-[var(--brand-umhlaba)] px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90 transition">Admin panel</Link>
+              )}
               <Link to="/me" className="hidden md:inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted transition">My Zenzele</Link>
               <button onClick={handleSignOut} className="hidden md:inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition">Sign out</button>
             </>

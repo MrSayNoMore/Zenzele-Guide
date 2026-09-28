@@ -1,13 +1,14 @@
 -- =========================================================================
--- NSC subject catalogue (reference data, not content).
+-- NSC subject catalogue (reference data, not content). Admins can add more
+-- in /admin/subjects.
 -- Codes match SubjectCode in src/engine/schemas.ts, which the APS engine and
 -- course requirements use. Safe to run more than once.
 -- =========================================================================
 INSERT INTO public.subjects (code, name, is_language, is_life_orientation) VALUES
   ('english_hl',                       'English Home Language',                 true,  false),
   ('english_fal',                      'English First Additional Language',     true,  false),
-  ('afrikaans_hl',                     'Afrikaans Huistaal',                    true,  false),
-  ('afrikaans_fal',                    'Afrikaans Eerste Addisionele Taal',     true,  false),
+  ('afrikaans_hl',                     'Afrikaans Home Language',               true,  false),
+  ('afrikaans_fal',                    'Afrikaans First Additional Language',   true,  false),
   ('isizulu_hl',                       'isiZulu Home Language',                 true,  false),
   ('isizulu_fal',                      'isiZulu First Additional Language',     true,  false),
   ('sesotho_hl',                       'Sesotho Home Language',                 true,  false),
@@ -32,6 +33,28 @@ INSERT INTO public.subjects (code, name, is_language, is_life_orientation) VALUE
   ('visual_arts',                      'Visual Arts',                           false, false),
   ('dramatic_arts',                    'Dramatic Arts',                         false, false),
   ('music',                            'Music',                                 false, false),
+  ('isixhosa_hl',                      'isiXhosa Home Language',                  true , false),
+  ('isixhosa_fal',                     'isiXhosa First Additional Language',      true , false),
+  ('sepedi_hl',                        'Sepedi Home Language',                    true , false),
+  ('sepedi_fal',                       'Sepedi First Additional Language',        true , false),
+  ('setswana_hl',                      'Setswana Home Language',                  true , false),
+  ('setswana_fal',                     'Setswana First Additional Language',      true , false),
+  ('siswati_hl',                       'siSwati Home Language',                   true , false),
+  ('siswati_fal',                      'siSwati First Additional Language',       true , false),
+  ('tshivenda_hl',                     'Tshivenda Home Language',                 true , false),
+  ('tshivenda_fal',                    'Tshivenda First Additional Language',     true , false),
+  ('xitsonga_hl',                      'Xitsonga Home Language',                  true , false),
+  ('xitsonga_fal',                     'Xitsonga First Additional Language',      true , false),
+  ('isindebele_hl',                    'isiNdebele Home Language',                true , false),
+  ('isindebele_fal',                   'isiNdebele First Additional Language',    true , false),
+  ('technical_sciences',               'Technical Sciences',                      false, false),
+  ('religion_studies',                 'Religion Studies',                        false, false),
+  ('hospitality_studies',              'Hospitality Studies',                     false, false),
+  ('civil_technology',                 'Civil Technology',                        false, false),
+  ('electrical_technology',            'Electrical Technology',                   false, false),
+  ('mechanical_technology',            'Mechanical Technology',                   false, false),
+  ('design',                           'Design',                                  false, false),
+  ('dance_studies',                    'Dance Studies',                           false, false),
   ('other',                            'Other subject',                         false, false)
 ON CONFLICT (code) DO UPDATE
   SET name = EXCLUDED.name,
