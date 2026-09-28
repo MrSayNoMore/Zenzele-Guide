@@ -61,7 +61,7 @@ export const Route = createFileRoute("/privacy")({
         withdraw consent for reminder emails at any time. If you have an account, you can
         delete it and all associated data from your account settings. To make any other
         request, contact us at{" "}
-        <a href="mailto:hello@zenzeleguide.co.za">hello@zenzeleguide.co.za</a>.
+        <a href="mailto:support@zenzeleguide.co.za">support@zenzeleguide.co.za</a>.
       </p>
 
       <h2>Minors</h2>

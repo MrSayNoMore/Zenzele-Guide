@@ -45,7 +45,7 @@ export const Route = createFileRoute("/terms")({
       <h2>Contact</h2>
       <p>
         Questions about these terms? Email{" "}
-        <a href="mailto:hello@zenzeleguide.co.za">hello@zenzeleguide.co.za</a>. These terms
+        <a href="mailto:support@zenzeleguide.co.za">support@zenzeleguide.co.za</a>. These terms
         will be expanded into a full version before public launch.
       </p>
     </ArticlePage>
