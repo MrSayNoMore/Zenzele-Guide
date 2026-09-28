@@ -179,3 +179,33 @@
     letter-spacing: -0.02em;
   }
 }
+
+/* ── Landing: subtle motion + pattern (reduced-motion aware) ── */
+@keyframes zg-in    { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes zg-fill  { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes zg-draw  { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes zg-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+.zg-in        { animation: zg-in .6s cubic-bezier(.2,.7,.2,1) both; }
+.zg-fill      { transform-origin: left; animation: zg-fill 1s cubic-bezier(.2,.7,.2,1) .4s both; }
+.zg-underline { transform-origin: left; animation: zg-draw .7s cubic-bezier(.2,.7,.2,1) .5s both; }
+.zg-float     { animation: zg-float 6s ease-in-out infinite; }
+
+.zg-dots {
+  background-image: radial-gradient(rgba(8,80,65,0.12) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(60% 80% at 80% 30%, #000 0%, transparent 75%);
+}
+
+/* Ndebele-inspired diamond strip */
+.zg-ndebele {
+  background:
+    linear-gradient(135deg, #FAC775 25%, transparent 25%) -6px 0 / 12px 12px,
+    linear-gradient(225deg, #FAC775 25%, transparent 25%) -6px 0 / 12px 12px,
+    linear-gradient(315deg, #1D9E75 25%, transparent 25%) 0 0 / 12px 12px,
+    linear-gradient(45deg, #1D9E75 25%, transparent 25%) 0 0 / 12px 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zg-in, .zg-fill, .zg-underline, .zg-float { animation: none !important; }
+}

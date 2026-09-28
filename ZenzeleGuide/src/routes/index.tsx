@@ -46,14 +46,15 @@ type Journey = {
   Icon: typeof Compass;
   status: "live" | "soon";
   short?: string;
+  accent?: string;
   to?: string;
 };
 
 const journeys: Journey[] = [
-  { slug: "grade-12", title: "I'm in Grade 12", blurb: "Match your marks to universities, TVETs, and bursaries.", Icon: GraduationCap, status: "live", to: "/journey/grade-12" },
-  { slug: "nsfas", title: "I need NSFAS", blurb: "Check if NSFAS will fund you — and what to prepare.", Icon: ShieldCheck, status: "live", to: "/journey/nsfas" },
-  { slug: "bursary", title: "I'm looking for a bursary", blurb: "Find bursaries that fit your profile, before the deadline.", Icon: Wallet, status: "live", to: "/journey/bursary" },
-  { slug: "tvet", title: "I want to study at a TVET", blurb: "Discover NC(V) and Report 191 programmes near you.", Icon: BookOpen, status: "live", to: "/journey/tvet" },
+  { slug: "grade-12", title: "I'm in Grade 12", blurb: "Match your marks to universities, TVETs, and bursaries.", Icon: GraduationCap, status: "live", to: "/journey/grade-12", accent: "#1D9E75" },
+  { slug: "nsfas", title: "I need NSFAS", blurb: "Check if NSFAS will fund you — and what to prepare.", Icon: ShieldCheck, status: "live", to: "/journey/nsfas", accent: "#085041" },
+  { slug: "bursary", title: "I'm looking for a bursary", blurb: "Find bursaries that fit your profile, before the deadline.", Icon: Wallet, status: "live", to: "/journey/bursary", accent: "#C8881E" },
+  { slug: "tvet", title: "I want to study at a TVET", blurb: "Discover NC(V) and Report 191 programmes near you.", Icon: BookOpen, status: "live", to: "/journey/tvet", accent: "#0E7C7B" },
   { slug: "grade-11", short: "Grade 11", title: "I'm in Grade 11", blurb: "See where your marks put you, and how to lift your APS.", Icon: Compass, status: "soon" },
   { slug: "grade-10", short: "Grade 10", title: "I'm in Grade 10", blurb: "Pick subjects that open doors to the careers you want.", Icon: Compass, status: "soon" },
   { slug: "gap-year", short: "Gap year", title: "I'm taking a gap year", blurb: "Learnerships, short courses, and other paths forward.", Icon: Sparkles, status: "soon" },
@@ -72,40 +73,56 @@ function Landing() {
 
       <main>
         {/* ───────────────────────── Hero ───────────────────────── */}
-        <section className="border-b border-border">
-          <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-14 sm:px-6 md:grid-cols-[1.1fr_.9fr] md:py-24">
+        <section className="relative overflow-hidden border-b border-border">
+          {/* soft brand glow + dot grid */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 -z-10"
+            style={{
+              background:
+                "radial-gradient(60% 70% at 85% 20%, rgba(29,158,117,0.14) 0%, transparent 60%), radial-gradient(40% 50% at 70% 90%, rgba(250,199,117,0.18) 0%, transparent 60%)",
+            }}
+          />
+          <div aria-hidden className="zg-dots pointer-events-none absolute inset-0 -z-10" />
+
+          <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 py-14 sm:px-6 md:grid-cols-[1.05fr_.95fr] md:py-24">
             <div className="max-w-xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.14em] text-primary">
+              <p className="zg-in inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.14em] text-primary">
+                <span className="h-px w-8 bg-primary" aria-hidden />
                 Guidance after matric
               </p>
 
-              <h1 className="mt-4 text-4xl font-semibold leading-[1.1] sm:text-5xl lg:text-[3.4rem]">
-                Know your options before you apply.
+              <h1 className="zg-in mt-5 text-4xl font-semibold leading-[1.08] sm:text-5xl lg:text-[3.6rem]" style={{ animationDelay: "60ms" }}>
+                Know your options{" "}
+                <span className="relative whitespace-nowrap italic text-primary">
+                  before you apply.
+                  <span aria-hidden className="zg-underline absolute -bottom-1 left-0 h-[5px] w-full rounded-full bg-accent" />
+                </span>
               </h1>
 
-              <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
+              <p className="zg-in mt-7 text-lg leading-relaxed text-muted-foreground" style={{ animationDelay: "120ms" }}>
                 Zenzele Guide calculates your APS the way each university does, then shows the
                 programmes, TVET colleges, and bursaries that fit your marks — with the reasons
                 behind every match.
               </p>
 
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <div className="zg-in mt-8 flex flex-col gap-3 sm:flex-row" style={{ animationDelay: "180ms" }}>
                 <a
                   href="#journeys"
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="group inline-flex h-12 items-center justify-center gap-2 rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-[0_8px_20px_-8px_rgba(29,158,117,0.7)] transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   Get started
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </a>
                 <a
                   href="/universities"
-                  className="inline-flex h-12 items-center justify-center rounded-md border border-border bg-background px-6 text-sm font-semibold text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="inline-flex h-12 items-center justify-center rounded-md border border-border bg-background/80 px-6 text-sm font-semibold text-foreground backdrop-blur transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   Browse universities
                 </a>
               </div>
 
-              <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+              <ul className="zg-in mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground" style={{ animationDelay: "240ms" }}>
                 {["Free to use", "No account required", "Works on any phone"].map((t) => (
                   <li key={t} className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-primary" />
@@ -115,7 +132,41 @@ function Landing() {
               </ul>
             </div>
 
-            <ApsPreview />
+            <div className="zg-in relative mx-auto w-full max-w-md md:max-w-none" style={{ animationDelay: "150ms" }}>
+              {/* tilted card behind for depth */}
+              <div
+                aria-hidden
+                className="absolute inset-0 translate-x-3 translate-y-3 rotate-[3deg] rounded-xl bg-[var(--brand-umhlaba)]"
+              >
+                <div className="zg-ndebele absolute inset-x-0 bottom-0 h-4 rounded-b-xl opacity-80" />
+              </div>
+              <div className="relative">
+                <ApsPreview />
+              </div>
+
+              {/* floating highlights */}
+              <div className="zg-float absolute -top-7 right-28 hidden items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs shadow-lg sm:flex">
+                <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <ShieldCheck className="h-4 w-4" />
+                </span>
+                <span>
+                  <span className="block font-semibold text-foreground">NSFAS</span>
+                  <span className="text-muted-foreground">Likely eligible</span>
+                </span>
+              </div>
+              <div
+                className="zg-float absolute -bottom-12 right-8 hidden items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs shadow-lg sm:flex"
+                style={{ animationDelay: "1.5s" }}
+              >
+                <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent/40 text-accent-foreground">
+                  <Wallet className="h-4 w-4" />
+                </span>
+                <span>
+                  <span className="block font-semibold text-foreground">3 bursaries</span>
+                  <span className="text-muted-foreground">match this profile</span>
+                </span>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -196,6 +247,33 @@ function Landing() {
             </div>
           </div>
         </section>
+        {/* ──────────────────── Closing CTA ──────────────────── */}
+        <section className="relative overflow-hidden bg-[var(--brand-umhlaba)] text-white">
+          <div aria-hidden className="zg-ndebele absolute inset-x-0 top-0 h-3 opacity-90" />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full"
+            style={{ background: "radial-gradient(circle, rgba(250,199,117,0.25), transparent 70%)" }}
+          />
+          <div className="relative mx-auto flex max-w-6xl flex-col gap-8 px-4 py-16 sm:px-6 md:flex-row md:items-center md:justify-between md:py-20">
+            <div className="max-w-xl">
+              <h2 className="text-3xl font-semibold text-white sm:text-4xl">
+                Your marks already tell a story.{" "}
+                <span className="italic text-accent">Let's read it together.</span>
+              </h2>
+              <p className="mt-4 text-white/75">
+                Enter your results once and see every door they open — in about two minutes.
+              </p>
+            </div>
+            <a
+              href="/journey/grade-12"
+              className="group inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-md bg-accent px-6 text-sm font-semibold text-accent-foreground transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--brand-umhlaba)]"
+            >
+              Check my APS
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </a>
+          </div>
+        </section>
       </main>
 
       <SiteFooter />
@@ -242,7 +320,7 @@ function ApsPreview() {
             <dt className="w-36 shrink-0 text-muted-foreground">{name}</dt>
             <dd className="flex flex-1 items-center gap-3">
               <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                <span className="block h-full rounded-full bg-primary" style={{ width: `${mark}%` }} />
+                <span className="zg-fill block h-full rounded-full bg-primary" style={{ width: `${mark}%` }} />
               </span>
               <span className="w-9 text-right font-medium tabular-nums text-foreground">{mark}%</span>
             </dd>
@@ -289,29 +367,42 @@ function Trust({ Icon, title, sub }: { Icon: typeof BadgeCheck; title: string; s
 }
 
 function JourneyCard({ journey }: { journey: Journey }) {
-  const { Icon, title, blurb, to } = journey;
+  const { Icon, title, blurb, to, accent = "#1D9E75" } = journey;
   return (
     <a
       href={to}
-      className="group flex items-center gap-4 rounded-lg border border-border bg-card p-5 transition hover:border-primary/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="group relative flex items-center gap-4 overflow-hidden rounded-lg border border-border bg-card p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-18px_rgba(8,60,48,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-muted text-[var(--brand-umhlaba)]">
+      <span
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-[3px] origin-left scale-x-0 transition-transform duration-300 group-hover:scale-x-100"
+        style={{ background: accent }}
+      />
+      <Icon
+        aria-hidden
+        className="pointer-events-none absolute -bottom-4 -right-3 h-24 w-24 opacity-[0.05] transition-opacity group-hover:opacity-[0.09]"
+        style={{ color: accent }}
+      />
+      <span
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md"
+        style={{ background: `${accent}1A`, color: accent }}
+      >
         <Icon className="h-5 w-5" />
       </span>
-      <div className="flex-1">
+      <div className="relative flex-1">
         <h3 className="font-sans text-base font-semibold text-foreground">{title}</h3>
         <p className="mt-0.5 text-sm text-muted-foreground">{blurb}</p>
       </div>
-      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+      <ArrowRight className="relative h-4 w-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
     </a>
   );
 }
 
 function Feature({ kicker, title, body }: { kicker: string; title: string; body: string }) {
   return (
-    <div className="border-t-2 border-primary/70 pt-5">
-      <span className="text-sm font-semibold tabular-nums text-muted-foreground">{kicker}</span>
-      <h3 className="mt-2 font-sans text-lg font-semibold text-foreground">{title}</h3>
+    <div className="border-t border-border pt-5">
+      <span className="font-display text-5xl font-semibold italic leading-none text-accent">{kicker}</span>
+      <h3 className="mt-4 font-sans text-lg font-semibold text-foreground">{title}</h3>
       <p className="mt-2 leading-relaxed text-muted-foreground">{body}</p>
     </div>
   );
