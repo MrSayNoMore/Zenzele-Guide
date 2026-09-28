@@ -1,10 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { getResult } from "@/lib/journey.functions";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { claimResult, getResult, listMySavedIds, toggleSavedItem } from "@/lib/journey.functions";
+import { useAuth } from "@/hooks/use-auth";
+import { peekAnonId } from "@/lib/anon";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader as Loader2, CircleCheck as CheckCircle2, TriangleAlert as AlertTriangle, Circle as XCircle, Circle as HelpCircle, Share2, ArrowLeft } from "lucide-react";
+import { Loader as Loader2, CircleCheck as CheckCircle2, TriangleAlert as AlertTriangle, Circle as XCircle, Circle as HelpCircle, Share2, ArrowLeft, Bookmark, BookmarkCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/results/$resultId")({
@@ -17,12 +19,15 @@ export const Route = createFileRoute("/results/$resultId")({
 function ResultsPage() {
   const { resultId } = Route.useParams() as { resultId: string };
 
+  const { user, loading: authLoading } = useAuth();
+
   const { data: result, isLoading, error } = useQuery({
-    queryKey: ["result", resultId],
-    queryFn: () => getResult({ data: { idOrSlug: resultId } }),
+    queryKey: ["result", resultId, user?.id ?? null],
+    queryFn: () => getResult({ data: { idOrSlug: resultId, anonId: peekAnonId() } }),
+    enabled: !authLoading,
   });
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -99,6 +104,13 @@ function ResultsPage() {
             </Button>
           </div>
         </div>
+
+        <SaveBanner
+          resultId={result.id}
+          shareSlug={result.share_slug}
+          viewer={result.viewer}
+          signedIn={!!user}
+        />
 
         {/* Grade 12 Results */}
         {isGrade12 && output && (
@@ -199,7 +211,10 @@ function ResultsPage() {
                               {match.faculty_name && ` — ${match.faculty_name}`}
                             </p>
                           </div>
-                          <StatusBadge status={match.status} />
+                          <div className="flex items-center gap-1">
+                            <StatusBadge status={match.status} />
+                            <SaveToggle kind="course" refId={match.course_id} returnTo={`/results/${result.share_slug}`} />
+                          </div>
                         </div>
                         <div className="flex gap-4 text-sm text-gray-600">
                           <span>APS: {match.total_aps} / {match.min_aps || "—"}</span>
@@ -280,7 +295,10 @@ function ResultsPage() {
                         <h3 className="font-medium">{match.name}</h3>
                         <p className="text-sm text-gray-600">{match.provider}</p>
                       </div>
-                      <BursaryStatusBadge status={match.status} />
+                      <div className="flex items-center gap-1">
+                        <BursaryStatusBadge status={match.status} />
+                        <SaveToggle kind="bursary" refId={match.bursary_id} returnTo={`/results/${result.share_slug}`} />
+                      </div>
                     </div>
                     {match.days_to_close !== undefined && (
                       <p className="text-sm text-gray-600">
@@ -322,7 +340,10 @@ function ResultsPage() {
                           )}
                         </p>
                       </div>
-                      <StatusBadge status={match.status} />
+                      <div className="flex items-center gap-1">
+                        <StatusBadge status={match.status} />
+                        <SaveToggle kind="tvet_program" refId={match.programme_id} returnTo={`/results/${result.share_slug}`} />
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -398,4 +419,124 @@ function formatNsfasStatus(status: string): string {
     needs_more_info: "We need more information to determine your eligibility",
   };
   return labels[status] || status;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function SaveBanner({
+  resultId,
+  shareSlug,
+  viewer,
+  signedIn,
+}: {
+  resultId: string;
+  shareSlug: string;
+  viewer?: { savedToAccount: boolean; canSave: boolean };
+  signedIn: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const claim = useMutation({
+    mutationFn: () => claimResult({ data: { resultId, anonId: peekAnonId() ?? "" } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["result"] });
+      queryClient.invalidateQueries({ queryKey: ["my-results"] });
+    },
+  });
+
+  if (viewer?.savedToAccount || claim.isSuccess) {
+    return (
+      <div className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+        <span className="flex items-center gap-2 font-medium text-[var(--brand-umhlaba)]">
+          <BookmarkCheck className="h-4 w-4" /> Saved to My Zenzele
+        </span>
+        <Link to="/me" className="font-semibold text-primary hover:underline">View all</Link>
+      </div>
+    );
+  }
+
+  // Only the person who ran this check can keep it; shared links just view.
+  if (!viewer?.canSave) return null;
+
+  return (
+    <div className="mb-6 flex flex-col gap-3 rounded-lg border border-border bg-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="text-sm">
+        <p className="font-semibold text-foreground">Keep these results</p>
+        <p className="text-muted-foreground">
+          {signedIn
+            ? "Save them to My Zenzele so you can come back from any device."
+            : "Create a free account to come back to them from any device. No account is needed to use the tools."}
+        </p>
+      </div>
+      {signedIn ? (
+        <Button onClick={() => claim.mutate()} disabled={claim.isPending} className="shrink-0">
+          {claim.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bookmark className="mr-2 h-4 w-4" />}
+          Save to My Zenzele
+        </Button>
+      ) : (
+        <Link
+          to="/auth"
+          search={{ redirect: `/results/${shareSlug}`, mode: "signup" }}
+          className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          <Bookmark className="h-4 w-4" /> Save — it's free
+        </Link>
+      )}
+      {claim.isError && <p className="text-sm text-destructive">{(claim.error as Error).message}</p>}
+    </div>
+  );
+}
+
+function SaveToggle({
+  kind,
+  refId,
+  returnTo,
+}: {
+  kind: "course" | "bursary" | "tvet_program";
+  refId?: string;
+  returnTo: string;
+}) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const savedIds = useQuery({
+    queryKey: ["my-saved-ids", user?.id ?? null],
+    queryFn: () => listMySavedIds(),
+    enabled: !!user,
+  });
+  const toggle = useMutation({
+    mutationFn: () => toggleSavedItem({ data: { kind, refId: refId! } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-saved-ids"] });
+      queryClient.invalidateQueries({ queryKey: ["my-saved"] });
+    },
+  });
+
+  if (!refId || !UUID.test(refId)) return null;
+
+  if (!user) {
+    return (
+      <Link
+        to="/auth"
+        search={{ redirect: returnTo, mode: "signup" }}
+        className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-primary"
+        aria-label="Sign up to shortlist this"
+        title="Sign up to shortlist this"
+      >
+        <Bookmark className="h-4 w-4" />
+      </Link>
+    );
+  }
+
+  const saved = savedIds.data?.includes(refId) ?? false;
+  return (
+    <button
+      onClick={() => toggle.mutate()}
+      disabled={toggle.isPending || savedIds.isLoading}
+      className="rounded-md p-1.5 text-primary hover:bg-muted disabled:opacity-50"
+      aria-label={saved ? "Remove from shortlist" : "Add to shortlist"}
+      aria-pressed={saved}
+      title={saved ? "Remove from shortlist" : "Add to shortlist"}
+    >
+      <Bookmark className={saved ? "h-4 w-4 fill-current" : "h-4 w-4"} />
+    </button>
+  );
 }

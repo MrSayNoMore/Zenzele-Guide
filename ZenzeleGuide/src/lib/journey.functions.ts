@@ -23,34 +23,46 @@ import { ENGINE_VERSION } from "@/engine/version";
 const Grade12InputSchema = z.object({
   profile: z.any(), // LearnerProfile validated at runtime by the engine
   anonId: z.string().nullable(),
-  userId: z.string().nullable(),
+  userId: z.string().nullable().optional(), // ignored; see resolveUserId
 });
 
 const NsfasInputSchema = z.object({
   profile: z.any(),
   anonId: z.string().nullable(),
-  userId: z.string().nullable(),
+  userId: z.string().nullable().optional(), // ignored; see resolveUserId
 });
 
 const BursaryInputSchema = z.object({
   profile: z.any(),
   anonId: z.string().nullable(),
-  userId: z.string().nullable(),
+  userId: z.string().nullable().optional(), // ignored; see resolveUserId
 });
 
 const TvetInputSchema = z.object({
   profile: z.any(),
   anonId: z.string().nullable(),
-  userId: z.string().nullable(),
+  userId: z.string().nullable().optional(), // ignored; see resolveUserId
 });
 
 const GetResultInputSchema = z.object({
   idOrSlug: z.string().min(1),
+  anonId: z.string().nullable().optional(),
 });
 
 const MigrateAnonInputSchema = z.object({
-  anonId: z.string().min(1),
-  userId: z.string().min(1),
+  anonId: z.string().min(8).max(64),
+});
+
+const ClaimResultInputSchema = z.object({
+  resultId: z.string().uuid(),
+  anonId: z.string().min(8).max(64),
+});
+
+const ResultIdSchema = z.object({ resultId: z.string().uuid() });
+
+const ToggleSavedInputSchema = z.object({
+  kind: z.enum(["course", "bursary", "tvet_program"]),
+  refId: z.string().uuid(),
 });
 
 /**
@@ -132,7 +144,10 @@ export const computeGrade12Match = createServerFn({ method: "POST" })
       },
     };
 
-    // Persist to database
+    // Persist to database. The owner comes from the verified session token,
+    // never from the request body.
+    const { resolveUserId } = await import("./journey.server");
+    const userId = await resolveUserId();
     const { id, share_slug } = await persistResult(
       "grade_12",
       profile,
@@ -140,8 +155,8 @@ export const computeGrade12Match = createServerFn({ method: "POST" })
       ENGINE_VERSION,
       [defaultRule.rule_id],
       null,
-      data.anonId ?? null,
-      data.userId ?? null
+      userId,
+      userId ? null : data.anonId ?? null
     );
 
     // Store in memory for demo retrieval if database unavailable
@@ -190,7 +205,10 @@ export const computeNsfasCheck = createServerFn({ method: "POST" })
       rule_version_id: rule.rule_id,
     };
 
-    // Persist to database
+    // Persist to database. The owner comes from the verified session token,
+    // never from the request body.
+    const { resolveUserId } = await import("./journey.server");
+    const userId = await resolveUserId();
     const { id, share_slug } = await persistResult(
       "nsfas",
       profile,
@@ -198,8 +216,8 @@ export const computeNsfasCheck = createServerFn({ method: "POST" })
       ENGINE_VERSION,
       [],
       rule.rule_id,
-      data.anonId ?? null,
-      data.userId ?? null
+      userId,
+      userId ? null : data.anonId ?? null
     );
 
     return {
@@ -249,7 +267,10 @@ export const computeBursaryMatch = createServerFn({ method: "POST" })
       closing_soon_count: closingSoon,
     };
 
-    // Persist to database
+    // Persist to database. The owner comes from the verified session token,
+    // never from the request body.
+    const { resolveUserId } = await import("./journey.server");
+    const userId = await resolveUserId();
     const { id, share_slug } = await persistResult(
       "bursary",
       profile,
@@ -257,8 +278,8 @@ export const computeBursaryMatch = createServerFn({ method: "POST" })
       ENGINE_VERSION,
       [],
       null,
-      data.anonId ?? null,
-      data.userId ?? null
+      userId,
+      userId ? null : data.anonId ?? null
     );
 
     return {
@@ -299,7 +320,10 @@ export const computeTvetMatch = createServerFn({ method: "POST" })
       below_count: counts.below,
     };
 
-    // Persist to database
+    // Persist to database. The owner comes from the verified session token,
+    // never from the request body.
+    const { resolveUserId } = await import("./journey.server");
+    const userId = await resolveUserId();
     const { id, share_slug } = await persistResult(
       "tvet",
       profile,
@@ -307,8 +331,8 @@ export const computeTvetMatch = createServerFn({ method: "POST" })
       ENGINE_VERSION,
       [],
       null,
-      data.anonId ?? null,
-      data.userId ?? null
+      userId,
+      userId ? null : data.anonId ?? null
     );
 
     return {
@@ -319,30 +343,82 @@ export const computeTvetMatch = createServerFn({ method: "POST" })
   });
 
 /**
- * Fetches a previously computed result by ID or share slug.
+ * Fetches a previously computed result by ID or share slug, plus what the
+ * current viewer may do with it (never the raw owner ids).
  */
 export const getResult = createServerFn({ method: "GET" })
   .validator(GetResultInputSchema)
   .handler(async ({ data }) => {
-    const { fetchResult } = await import("./journey.server");
+    const { fetchResult, fetchResultOwnership, resolveUserId } = await import("./journey.server");
 
     const result = await fetchResult(data.idOrSlug);
     if (!result) {
       throw new Error("Result not found");
     }
 
-    return result;
+    const [ownership, userId] = await Promise.all([
+      fetchResultOwnership(data.idOrSlug),
+      resolveUserId(),
+    ]);
+    const savedToAccount = !!ownership?.user_id && ownership.user_id === userId;
+    const createdOnThisDevice =
+      !!ownership && !ownership.user_id && !!data.anonId && ownership.anon_id === data.anonId;
+
+    return { ...result, viewer: { savedToAccount, canSave: createdOnThisDevice } };
   });
 
 /**
- * Migrates anonymous session results to a user account.
+ * Moves every result created on this device into the signed-in user's account.
  */
 export const migrateAnonymousSession = createServerFn({ method: "POST" })
   .validator(MigrateAnonInputSchema)
   .handler(async ({ data }) => {
-    const { migrateAnonymousResults } = await import("./journey.server");
-
-    const count = await migrateAnonymousResults(data.anonId, data.userId);
-
+    const { migrateAnonymousResults, requireUserId } = await import("./journey.server");
+    const userId = await requireUserId();
+    const count = await migrateAnonymousResults(data.anonId, userId);
     return { migratedCount: count };
+  });
+
+/** Saves one result (created on this device) to the signed-in user's account. */
+export const claimResult = createServerFn({ method: "POST" })
+  .validator(ClaimResultInputSchema)
+  .handler(async ({ data }) => {
+    const { claimResultForUser, requireUserId } = await import("./journey.server");
+    const userId = await requireUserId();
+    const ok = await claimResultForUser(data.resultId, data.anonId, userId);
+    if (!ok) throw new Error("This result can't be saved to your account.");
+    return { ok };
+  });
+
+export const listMyResults = createServerFn({ method: "GET" }).handler(async () => {
+  const { listResultsForUser, requireUserId } = await import("./journey.server");
+  return listResultsForUser(await requireUserId());
+});
+
+export const deleteMyResult = createServerFn({ method: "POST" })
+  .validator(ResultIdSchema)
+  .handler(async ({ data }) => {
+    const { deleteResultForUser, requireUserId } = await import("./journey.server");
+    await deleteResultForUser(data.resultId, await requireUserId());
+    return { ok: true };
+  });
+
+export const listMySavedItems = createServerFn({ method: "GET" }).handler(async () => {
+  const { listSavedItemsForUser, requireUserId } = await import("./journey.server");
+  return listSavedItemsForUser(await requireUserId());
+});
+
+/** Ids of everything the signed-in user has saved; empty when signed out. */
+export const listMySavedIds = createServerFn({ method: "GET" }).handler(async () => {
+  const { listSavedRefIds, resolveUserId } = await import("./journey.server");
+  const userId = await resolveUserId();
+  return userId ? listSavedRefIds(userId) : ([] as string[]);
+});
+
+export const toggleSavedItem = createServerFn({ method: "POST" })
+  .validator(ToggleSavedInputSchema)
+  .handler(async ({ data }) => {
+    const { toggleSavedItemForUser, requireUserId } = await import("./journey.server");
+    const saved = await toggleSavedItemForUser(await requireUserId(), data.kind, data.refId);
+    return { saved };
   });

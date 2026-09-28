@@ -13,6 +13,7 @@ import { Route as UniversitiesRouteImport } from './routes/universities'
 import { Route as TvetCollegesRouteImport } from './routes/tvet-colleges'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as MeRouteImport } from './routes/me'
 import { Route as CareersRouteImport } from './routes/careers'
 import { Route as BursariesRouteImport } from './routes/bursaries'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -46,6 +47,11 @@ const TermsRoute = TermsRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeRoute = MeRouteImport.update({
+  id: '/me',
+  path: '/me',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CareersRoute = CareersRouteImport.update({
@@ -126,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteWithChildren
   '/bursaries': typeof BursariesRoute
   '/careers': typeof CareersRoute
+  '/me': typeof MeRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/tvet-colleges': typeof TvetCollegesRoute
@@ -146,6 +153,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
   '/bursaries': typeof BursariesRoute
   '/careers': typeof CareersRoute
+  '/me': typeof MeRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/tvet-colleges': typeof TvetCollegesRoute
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteWithChildren
   '/bursaries': typeof BursariesRoute
   '/careers': typeof CareersRoute
+  '/me': typeof MeRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/tvet-colleges': typeof TvetCollegesRoute
@@ -189,6 +198,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/bursaries'
     | '/careers'
+    | '/me'
     | '/privacy'
     | '/terms'
     | '/tvet-colleges'
@@ -209,6 +219,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/bursaries'
     | '/careers'
+    | '/me'
     | '/privacy'
     | '/terms'
     | '/tvet-colleges'
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/bursaries'
     | '/careers'
+    | '/me'
     | '/privacy'
     | '/terms'
     | '/tvet-colleges'
@@ -250,6 +262,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   BursariesRoute: typeof BursariesRoute
   CareersRoute: typeof CareersRoute
+  MeRoute: typeof MeRoute
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
   TvetCollegesRoute: typeof TvetCollegesRoute
@@ -290,6 +303,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me': {
+      id: '/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof MeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/careers': {
@@ -420,6 +440,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   BursariesRoute: BursariesRoute,
   CareersRoute: CareersRoute,
+  MeRoute: MeRoute,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
   TvetCollegesRoute: TvetCollegesRoute,

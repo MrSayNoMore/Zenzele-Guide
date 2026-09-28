@@ -527,3 +527,201 @@ export async function migrateAnonymousResults(
 
   return data?.length || 0;
 }
+
+// ---------------------------------------------------------------------------
+// Accounts: identity, ownership, saved items
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the signed-in user's id from the request's bearer token, or null.
+ * The browser attaches the token via `attachSupabaseAuth`; we verify it here
+ * rather than trusting any user id sent in the request body.
+ */
+export async function resolveUserId(): Promise<string | null> {
+  try {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const header = getRequest()?.headers.get("authorization");
+    if (!header?.startsWith("Bearer ")) return null;
+    const token = header.slice("Bearer ".length).trim();
+    if (!token) return null;
+
+    const supabase = await getSupabaseAdmin();
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data.user) return null;
+    return data.user.id;
+  } catch (err) {
+    console.error("Failed to resolve user:", err);
+    return null;
+  }
+}
+
+export async function requireUserId(): Promise<string> {
+  const userId = await resolveUserId();
+  if (!userId) throw new Error("Please sign in to continue.");
+  return userId;
+}
+
+/** Raw ownership columns for a result, used to decide what the viewer may do. */
+export async function fetchResultOwnership(
+  idOrSlug: string
+): Promise<{ id: string; user_id: string | null; anon_id: string | null } | null> {
+  const supabase = await getSupabaseAdmin();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+  const { data, error } = await supabase
+    .from("results")
+    .select("id, user_id, anon_id")
+    .eq(isUuid ? "id" : "share_slug", idOrSlug)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data;
+}
+
+/**
+ * Attaches one anonymous result to a user. Only succeeds when the caller
+ * proves they created it (same anon id) and nobody owns it yet.
+ */
+export async function claimResultForUser(
+  resultId: string,
+  anonId: string,
+  userId: string
+): Promise<boolean> {
+  const supabase = await getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("results")
+    .update({ user_id: userId, anon_id: null })
+    .eq("id", resultId)
+    .eq("anon_id", anonId)
+    .is("user_id", null)
+    .select("id");
+  if (error) {
+    console.error("Failed to claim result:", error);
+    return false;
+  }
+  return (data?.length ?? 0) > 0;
+}
+
+export async function listResultsForUser(userId: string) {
+  const supabase = await getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("results")
+    .select("id, journey, share_slug, created_at, output")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) {
+    console.error("Failed to list results:", error);
+    return [];
+  }
+  return data.map((r) => ({
+    id: r.id,
+    journey: r.journey,
+    share_slug: r.share_slug,
+    created_at: r.created_at,
+    summary: summariseOutput(r.journey, r.output),
+  }));
+}
+
+function summariseOutput(journey: string, output: Json): string {
+  const o = (output ?? {}) as Record<string, any>;
+  switch (journey) {
+    case "grade_12": {
+      const s = o.learner_summary ?? {};
+      return `APS ${s.total_aps_avg ?? "—"} · ${s.qualifies_count ?? 0} courses you qualify for`;
+    }
+    case "nsfas": {
+      const status = String(o.outcome?.status ?? "");
+      if (status.startsWith("funded") || status === "auto_qualifies_sassa") return "Likely NSFAS funded";
+      if (status === "needs_more_info") return "More information needed";
+      return "Not NSFAS funded";
+    }
+    case "bursary":
+      return `${o.eligible_count ?? 0} bursaries you're eligible for`;
+    case "tvet":
+      return `${o.qualifies_count ?? 0} TVET programmes you qualify for`;
+    default:
+      return "";
+  }
+}
+
+export async function deleteResultForUser(resultId: string, userId: string): Promise<void> {
+  const supabase = await getSupabaseAdmin();
+  const { error } = await supabase.from("results").delete().eq("id", resultId).eq("user_id", userId);
+  if (error) throw new Error("Could not remove this result.");
+}
+
+export type SavedKind = "course" | "bursary" | "tvet_program";
+
+export async function listSavedRefIds(userId: string): Promise<string[]> {
+  const supabase = await getSupabaseAdmin();
+  const { data } = await supabase.from("saved_items").select("ref_id").eq("user_id", userId);
+  return (data ?? []).map((r) => r.ref_id);
+}
+
+export async function toggleSavedItemForUser(
+  userId: string,
+  kind: SavedKind,
+  refId: string
+): Promise<boolean> {
+  const supabase = await getSupabaseAdmin();
+  const { data: existing } = await supabase
+    .from("saved_items")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("kind", kind)
+    .eq("ref_id", refId)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase.from("saved_items").delete().eq("id", existing.id);
+    if (error) throw new Error("Could not remove this item.");
+    return false;
+  }
+  const { error } = await supabase.from("saved_items").insert({ user_id: userId, kind, ref_id: refId });
+  if (error) throw new Error("Could not save this item.");
+  return true;
+}
+
+export async function listSavedItemsForUser(userId: string) {
+  const supabase = await getSupabaseAdmin();
+  const { data: items } = await supabase
+    .from("saved_items")
+    .select("id, kind, ref_id, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (!items?.length) return [];
+
+  const ids = (kind: string) => items.filter((i) => i.kind === kind).map((i) => i.ref_id);
+  const [courses, bursaries, programmes] = await Promise.all([
+    ids("course").length
+      ? supabase
+          .from("courses")
+          .select("id, name, faculties(name, universities(name))")
+          .in("id", ids("course"))
+      : Promise.resolve({ data: [] as any[] }),
+    ids("bursary").length
+      ? supabase.from("bursaries").select("id, name, provider, website_url").in("id", ids("bursary"))
+      : Promise.resolve({ data: [] as any[] }),
+    ids("tvet_program").length
+      ? supabase.from("tvet_programs").select("id, name, tvet_colleges(name)").in("id", ids("tvet_program"))
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
+
+  const byId = new Map<string, { title: string; subtitle: string; url?: string | null }>();
+  for (const c of (courses.data ?? []) as any[]) {
+    byId.set(c.id, { title: c.name, subtitle: c.faculties?.universities?.name ?? c.faculties?.name ?? "" });
+  }
+  for (const b of (bursaries.data ?? []) as any[]) {
+    byId.set(b.id, { title: b.name, subtitle: b.provider, url: b.website_url });
+  }
+  for (const p of (programmes.data ?? []) as any[]) {
+    byId.set(p.id, { title: p.name, subtitle: p.tvet_colleges?.name ?? "" });
+  }
+
+  return items.map((i) => ({
+    id: i.id,
+    kind: i.kind as SavedKind,
+    ref_id: i.ref_id,
+    created_at: i.created_at,
+    ...(byId.get(i.ref_id) ?? { title: "No longer listed", subtitle: "" }),
+  }));
+}

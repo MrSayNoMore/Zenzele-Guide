@@ -43,8 +43,10 @@ function AuthCallback() {
           window.location.hash = "";
         }
 
-        // Redirect to admin or home
-        navigate({ to: "/admin" });
+        // Back to wherever they started (e.g. a results page), else their account
+        const next = new URLSearchParams(window.location.search).get("redirect");
+        const safe = next && next.startsWith("/") && !next.startsWith("//") ? next : "/me";
+        navigate({ to: safe as any, replace: true });
       } catch (err) {
         setError("Authentication failed");
       }
