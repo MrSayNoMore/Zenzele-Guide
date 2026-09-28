@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, GraduationCap, Wallet, Settings, Users, Database, LayoutDashboard, LogOut, Menu, X, Loader as Loader2 } from "lucide-react";
+import { Building2, GraduationCap, Wallet, LayoutDashboard, LogOut, Menu, X, Loader as Loader2 } from "lucide-react";
+import { Toaster } from "@/components/ui/sonner";
 import { useState } from "react";
 
 export const Route = createFileRoute("/admin")({
@@ -78,17 +79,11 @@ function AdminLayout() {
   };
 
   const navItems = [
-    { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/admin/universities", label: "Universities", icon: Building2 },
     { path: "/admin/courses", label: "Courses", icon: GraduationCap },
     { path: "/admin/bursaries", label: "Bursaries", icon: Wallet },
-    { path: "/admin/tvet", label: "TVET Colleges", icon: Database },
-    { path: "/admin/rules", label: "Rules & APS", icon: Settings },
   ];
-
-  if (roles?.includes("super_admin")) {
-    navItems.push({ path: "/admin/users", label: "Users", icon: Users });
-  }
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -169,11 +164,12 @@ function AdminLayout() {
         )}
 
         {/* Main content */}
-        <main className="flex-1 min-h-screen">
+        <main className="flex-1 min-h-screen min-w-0">
           <div className="p-6">
             <Outlet />
           </div>
         </main>
+        <Toaster position="top-center" />
       </div>
     </div>
   );
