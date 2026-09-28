@@ -175,6 +175,24 @@ export function geminiLimitError(status: number, body: GeminiError | null): Erro
   );
 }
 
+/**
+ * Groq 429/503: a used-up daily token/request budget stops with a clear
+ * message; per-minute limits and busy servers wait and retry.
+ */
+export function groqLimitError(status: number, retryAfter: number, message = ""): Error {
+  const firstLine = message.split("\n")[0].slice(0, 200);
+  if (status === 429 && /per day|\(TPD\)|\(RPD\)/i.test(message)) {
+    const wait = /try again in ([\dhms.]+)/i.exec(message)?.[1]?.replace(/\.$/, "");
+    return new Error(
+      `Groq's free daily limit for ${aiModel()} is used up${wait ? ` (Groq says try again in ${wait})` : ""}. Open this import later and use Retry, or set GROQ_MODEL in Cloudflare to another Groq model, which has its own daily limit.`,
+    );
+  }
+  return new RateLimitError(
+    clampRetry(retryAfter || 20),
+    status === 503 ? "Groq is busy right now" : firstLine || "Groq's per-minute limit",
+  );
+}
+
 async function groqJson(system: string, user: string, maxTokens: number): Promise<unknown> {
   const key = serverEnv("GROQ_API_KEY");
   if (!key) throw new Error("GROQ_API_KEY isn't set. Add it as a Worker secret in Cloudflare.");
@@ -195,8 +213,9 @@ async function groqJson(system: string, user: string, maxTokens: number): Promis
     }),
   });
 
-  if (res.status === 429) {
-    throw new RateLimitError(clampRetry(Number(res.headers.get("retry-after")) || 20));
+  if (res.status === 429 || res.status === 503) {
+    const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
+    throw groqLimitError(res.status, Number(res.headers.get("retry-after")), body?.error?.message);
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "");

@@ -55,3 +55,27 @@ describe("geminiLimitError", () => {
     expect((e as RateLimitError).reason).toBe("Gemini is busy right now");
   });
 });
+
+describe("groqLimitError", () => {
+  it("stops on a used-up daily token budget", async () => {
+    const { groqLimitError } = await import("../ai.server");
+    const e = groqLimitError(
+      429,
+      420,
+      "Rate limit reached for model `llama-3.3-70b-versatile` on tokens per day (TPD): Limit 100000, Used 99650, Requested 3000. Please try again in 7m12.5s.",
+    );
+    expect(e).not.toBeInstanceOf(RateLimitError);
+    expect(e.message).toMatch(/daily limit .* used up \(Groq says try again in 7m12.5s\)/);
+  });
+
+  it("waits on a per-minute limit", async () => {
+    const { groqLimitError } = await import("../ai.server");
+    const e = groqLimitError(
+      429,
+      8,
+      "Rate limit reached for model `llama-3.3-70b-versatile` on tokens per minute (TPM): Limit 12000. Please try again in 7.9s.",
+    );
+    expect(e).toBeInstanceOf(RateLimitError);
+    expect((e as RateLimitError).retryAfterSeconds).toBe(8);
+  });
+});
