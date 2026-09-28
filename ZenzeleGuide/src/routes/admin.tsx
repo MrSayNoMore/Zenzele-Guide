@@ -9,6 +9,7 @@ import {
   Loader2,
   LogOut,
   Menu,
+  Sparkles,
   ShieldAlert,
   Wallet,
   X,
@@ -32,6 +33,7 @@ const NAV = [
   { path: "/admin/courses", label: "Courses", icon: GraduationCap },
   { path: "/admin/bursaries", label: "Bursaries", icon: Wallet },
   { path: "/admin/subjects", label: "NSC subjects", icon: BookOpen },
+  { path: "/admin/ai-import", label: "AI import", icon: Sparkles },
 ] as const;
 
 function AdminLayout() {
