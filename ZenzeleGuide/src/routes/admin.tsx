@@ -58,7 +58,7 @@ function AdminLayout() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Button
-              onClick={() => navigate({ to: "/auth" })}
+              onClick={() => navigate({ to: "/auth", search: { redirect: "/admin", mode: undefined } })}
               className="w-full"
             >
               Sign In

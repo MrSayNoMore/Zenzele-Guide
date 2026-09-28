@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,23 +8,43 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader as Loader2, Mail, Lock, User, ArrowLeft } from "lucide-react";
 
+/** Only allow same-site paths, so the redirect can't send people elsewhere. */
+export function safeRedirect(value: unknown, fallback = "/me"): string {
+  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//") ? value : fallback;
+}
+
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Sign in — Zenzele Guide" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+    mode: search.mode === "signup" ? ("signup" as const) : undefined,
+  }),
   component: AuthPage,
 });
 
 function AuthPage() {
   const navigate = useNavigate();
-  const search = useSearch({ from: "/auth" }) as { redirect?: string };
-  const redirect = search.redirect || "/";
+  const search = useSearch({ from: "/auth" });
+  const redirect = safeRedirect(search.redirect);
 
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(search.mode === "signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  // Already signed in: go straight to where they were heading.
+  useEffect(() => {
+    try {
+      supabase.auth.getSession().then(({ data }) => {
+        if (data.session) navigate({ to: redirect as any, replace: true });
+      });
+    } catch (err) {
+      console.error(err); // Supabase not configured; the form will show the error on submit
+    }
+  }, [navigate, redirect]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,18 +65,21 @@ function AuthPage() {
           return;
         }
 
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`,
           },
         });
 
         if (signUpError) {
           setError(signUpError.message);
+        } else if (signUpData.session) {
+          // Email confirmation is off: they're signed in already.
+          navigate({ to: redirect as any });
         } else {
-          setMessage("Account created! You can now sign in.");
+          setMessage("Almost there — check your email and tap the confirmation link to finish creating your account.");
           setIsSignUp(false);
         }
       } else {
@@ -79,11 +102,11 @@ function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-muted/40 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <a
           href="/"
-          className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-6"
+          className="inline-flex items-center text-primary hover:text-primary/80 mb-6"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to home
@@ -96,8 +119,8 @@ function AuthPage() {
             </CardTitle>
             <CardDescription>
               {isSignUp
-                ? "Sign up to save your results and get reminders"
-                : "Access your saved results and admin portal"}
+                ? "Save your results and shortlist courses and bursaries"
+                : "Welcome back — your saved results are waiting"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -184,7 +207,7 @@ function AuthPage() {
                       setError(null);
                       setMessage(null);
                     }}
-                    className="text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-primary hover:text-primary/80 font-medium"
                   >
                     Sign in
                   </button>
@@ -199,7 +222,7 @@ function AuthPage() {
                       setError(null);
                       setMessage(null);
                     }}
-                    className="text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-primary hover:text-primary/80 font-medium"
                   >
                     Sign up
                   </button>
@@ -210,8 +233,8 @@ function AuthPage() {
         </Card>
 
         <p className="mt-6 text-center text-sm text-gray-500">
-          You can use Zenzele Guide without an account. Sign up to save your results
-          and access the admin portal.
+          Every tool works without an account. Sign up only if you want to keep your
+          results and shortlist in one place.
         </p>
       </div>
     </div>

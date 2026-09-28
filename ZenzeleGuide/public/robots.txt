@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Private or per-person pages
+Disallow: /admin
+Disallow: /auth
+Disallow: /me
+Disallow: /results/
+
+Sitemap: https://zenzeleguide.co.za/sitemap.xml
