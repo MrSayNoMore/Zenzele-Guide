@@ -1,5 +1,11 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { geminiLimitError, RateLimitError } from "../ai.server";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  classifyGeminiFailure,
+  extractDrafts,
+  RateLimitError,
+  resetGeminiModelState,
+  verifyDrafts,
+} from "../ai.server";
 
 const quota = (quotaId: string, quotaValue: string, retryDelay?: string) => ({
   error: {
@@ -14,45 +20,107 @@ const quota = (quotaId: string, quotaValue: string, retryDelay?: string) => ({
     ],
   },
 });
+const DAILY = quota("GenerateRequestsPerDayPerProjectPerModel-FreeTier", "20");
+const MINUTE = quota("GenerateRequestsPerMinutePerProjectPerModel-FreeTier", "10", "12s");
 
-describe("geminiLimitError", () => {
+describe("classifyGeminiFailure", () => {
+  it("tells daily, no-quota, per-minute, busy and missing apart", () => {
+    expect(classifyGeminiFailure("m", 429, DAILY).kind).toBe("daily");
+    expect(
+      classifyGeminiFailure(
+        "m",
+        429,
+        quota("GenerateRequestsPerMinutePerProjectPerModel-FreeTier", "0"),
+      ).kind,
+    ).toBe("no_quota");
+    expect(classifyGeminiFailure("m", 429, MINUTE)).toMatchObject({
+      kind: "minute",
+      waitSeconds: 12,
+    });
+    expect(classifyGeminiFailure("m", 503, null).kind).toBe("busy");
+    expect(classifyGeminiFailure("m", 404, null).kind).toBe("missing");
+  });
+});
+
+describe("Gemini model fallback", () => {
+  const answer = (payload: unknown) =>
+    new Response(
+      JSON.stringify({
+        candidates: [
+          { content: { parts: [{ text: JSON.stringify(payload) }] }, finishReason: "STOP" },
+        ],
+      }),
+      { status: 200 },
+    );
+  const limited = (body: unknown, status = 429) => new Response(JSON.stringify(body), { status });
+  let calls: string[];
+
+  beforeEach(() => {
+    resetGeminiModelState();
+    calls = [];
+    process.env.GEMINI_API_KEY = "test";
+    process.env.GEMINI_MODELS = "model-a, model-b, model-c";
+    delete process.env.AI_PROVIDER;
+  });
   afterEach(() => {
-    delete process.env.GEMINI_MODEL;
+    vi.unstubAllGlobals();
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.GEMINI_MODELS;
   });
 
-  it("waits and retries on a per-minute limit, with Google's reason", () => {
-    const e = geminiLimitError(
-      429,
-      quota("GenerateRequestsPerMinutePerProjectPerModel-FreeTier", "10", "34s"),
+  function stubGemini(responder: (model: string, n: number) => Response) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        const model = decodeURIComponent(/models\/([^:]+):/.exec(url)![1]);
+        calls.push(model);
+        return responder(model, calls.length);
+      }),
     );
+  }
+  const ctx = { chunkNumber: 1, chunkCount: 1 };
+
+  it("moves to the next model when one's daily limit is used up, and skips it afterwards", async () => {
+    stubGemini((model) => (model === "model-a" ? limited(DAILY) : answer({ items: [] })));
+    const first = await extractDrafts("bursaries", "text", ctx);
+    expect(first.model).toBe("model-b");
+    await extractDrafts("bursaries", "text", ctx);
+    expect(calls).toEqual(["model-a", "model-b", "model-b"]); // model-a not retried
+  });
+
+  it("switches models on a per-minute limit or busy server instead of waiting", async () => {
+    stubGemini((model) =>
+      model === "model-a"
+        ? limited(MINUTE)
+        : model === "model-b"
+          ? limited({}, 503)
+          : answer({ items: [] }),
+    );
+    expect((await extractDrafts("bursaries", "text", ctx)).model).toBe("model-c");
+  });
+
+  it("double-checks with a different model from the one that extracted", async () => {
+    stubGemini(() => answer({ results: [{ index: 0, verdict: "supported", problems: [] }] }));
+    const draft = { name: { value: "x", quote: "x" } } as never;
+    const { model, verdicts } = await verifyDrafts([draft], "model-a");
+    expect(model).toBe("model-b");
+    expect(verdicts[0]?.verdict).toBe("supported");
+  });
+
+  it("waits when every model is only at its per-minute limit", async () => {
+    stubGemini(() => limited(MINUTE));
+    const e = await extractDrafts("bursaries", "text", ctx).catch((err) => err);
     expect(e).toBeInstanceOf(RateLimitError);
-    expect((e as RateLimitError).retryAfterSeconds).toBe(34);
-    expect((e as RateLimitError).reason).toMatch(/exceeded your current quota/);
+    expect(e.retryAfterSeconds).toBe(12);
   });
 
-  it("stops with a clear message when the daily limit is used up", () => {
-    process.env.GEMINI_MODEL = "gemini-3.8-flash";
-    const e = geminiLimitError(
-      429,
-      quota("GenerateRequestsPerDayPerProjectPerModel-FreeTier", "20", "20s"),
-    );
+  it("stops with the list of models when all are out for the day", async () => {
+    stubGemini((model) => (model === "model-c" ? limited({}, 404) : limited(DAILY)));
+    const e = await extractDrafts("bursaries", "text", ctx).catch((err) => err);
     expect(e).not.toBeInstanceOf(RateLimitError);
-    expect(e.message).toMatch(/free daily limit for gemini-3.8-flash is used up/);
-  });
-
-  it("stops when the key has no free quota for the model", () => {
-    const e = geminiLimitError(
-      429,
-      quota("GenerateRequestsPerMinutePerProjectPerModel-FreeTier", "0"),
+    expect(e.message).toMatch(
+      /model-a \(daily limit used up\), model-b \(daily limit used up\), model-c \(not available\)/,
     );
-    expect(e).not.toBeInstanceOf(RateLimitError);
-    expect(e.message).toMatch(/no free quota/);
-  });
-
-  it("treats 503 as busy and retries", () => {
-    const e = geminiLimitError(503, null);
-    expect(e).toBeInstanceOf(RateLimitError);
-    expect((e as RateLimitError).reason).toBe("Gemini is busy right now");
   });
 });
 

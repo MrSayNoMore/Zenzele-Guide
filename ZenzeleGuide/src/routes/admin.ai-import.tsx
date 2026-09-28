@@ -490,8 +490,11 @@ function NewImport() {
               <p className="text-xs text-muted-foreground">
                 {ai.data.configured ? (
                   <>
-                    AI: {ai.data.provider === "gemini" ? "Google Gemini" : "Groq"} ({ai.data.model})
-                    {ai.data.readsPdf ? " · reads PDF pages directly" : " · reads text only"}
+                    AI: {ai.data.provider === "gemini" ? "Google Gemini" : "Groq"} (
+                    {ai.data.models.length > 1
+                      ? `${ai.data.models.join(", ")}; switches when one hits its limit`
+                      : ai.data.model}
+                    ){ai.data.readsPdf ? " · reads PDF pages directly" : " · reads text only"}
                   </>
                 ) : (
                   <span className="text-destructive">
