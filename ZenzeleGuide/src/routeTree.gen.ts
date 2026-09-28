@@ -9,63 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UniversitiesRouteImport } from './routes/universities'
-import { Route as TvetCollegesRouteImport } from './routes/tvet-colleges'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as CareersRouteImport } from './routes/careers'
-import { Route as BursariesRouteImport } from './routes/bursaries'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ResultsResultIdRouteImport } from './routes/results.$resultId'
-import { Route as JourneyTvetRouteImport } from './routes/journey.tvet'
-import { Route as JourneyNsfasRouteImport } from './routes/journey.nsfas'
-import { Route as JourneyGrade12RouteImport } from './routes/journey.grade-12'
-import { Route as JourneyBursaryRouteImport } from './routes/journey.bursary'
-import { Route as JourneySlugRouteImport } from './routes/journey.$slug'
-import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as BursariesRouteImport } from './routes/bursaries'
+import { Route as CareersRouteImport } from './routes/careers'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as TvetCollegesRouteImport } from './routes/tvet-colleges'
+import { Route as UniversitiesRouteImport } from './routes/universities'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as JourneySlugRouteImport } from './routes/journey.$slug'
+import { Route as JourneyBursaryRouteImport } from './routes/journey.bursary'
+import { Route as JourneyGrade12RouteImport } from './routes/journey.grade-12'
+import { Route as JourneyNsfasRouteImport } from './routes/journey.nsfas'
+import { Route as JourneyTvetRouteImport } from './routes/journey.tvet'
+import { Route as ResultsResultIdRouteImport } from './routes/results.$resultId'
 
-const UniversitiesRoute = UniversitiesRouteImport.update({
-  id: '/universities',
-  path: '/universities',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TvetCollegesRoute = TvetCollegesRouteImport.update({
-  id: '/tvet-colleges',
-  path: '/tvet-colleges',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CareersRoute = CareersRouteImport.update({
-  id: '/careers',
-  path: '/careers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BursariesRoute = BursariesRouteImport.update({
-  id: '/bursaries',
-  path: '/bursaries',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -73,29 +38,59 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ResultsResultIdRoute = ResultsResultIdRouteImport.update({
-  id: '/results/$resultId',
-  path: '/results/$resultId',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const JourneyTvetRoute = JourneyTvetRouteImport.update({
-  id: '/journey/tvet',
-  path: '/journey/tvet',
+const BursariesRoute = BursariesRouteImport.update({
+  id: '/bursaries',
+  path: '/bursaries',
   getParentRoute: () => rootRouteImport,
 } as any)
-const JourneyNsfasRoute = JourneyNsfasRouteImport.update({
-  id: '/journey/nsfas',
-  path: '/journey/nsfas',
+const CareersRoute = CareersRouteImport.update({
+  id: '/careers',
+  path: '/careers',
   getParentRoute: () => rootRouteImport,
 } as any)
-const JourneyGrade12Route = JourneyGrade12RouteImport.update({
-  id: '/journey/grade-12',
-  path: '/journey/grade-12',
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TvetCollegesRoute = TvetCollegesRouteImport.update({
+  id: '/tvet-colleges',
+  path: '/tvet-colleges',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UniversitiesRoute = UniversitiesRouteImport.update({
+  id: '/universities',
+  path: '/universities',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminDashboardRoute = AdminDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRoute,
+} as any)
+const JourneySlugRoute = JourneySlugRouteImport.update({
+  id: '/journey/$slug',
+  path: '/journey/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JourneyBursaryRoute = JourneyBursaryRouteImport.update({
@@ -103,20 +98,25 @@ const JourneyBursaryRoute = JourneyBursaryRouteImport.update({
   path: '/journey/bursary',
   getParentRoute: () => rootRouteImport,
 } as any)
-const JourneySlugRoute = JourneySlugRouteImport.update({
-  id: '/journey/$slug',
-  path: '/journey/$slug',
+const JourneyGrade12Route = JourneyGrade12RouteImport.update({
+  id: '/journey/grade-12',
+  path: '/journey/grade-12',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/callback',
-  path: '/callback',
-  getParentRoute: () => AuthRoute,
+const JourneyNsfasRoute = JourneyNsfasRouteImport.update({
+  id: '/journey/nsfas',
+  path: '/journey/nsfas',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminDashboardRoute = AdminDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AdminRoute,
+const JourneyTvetRoute = JourneyTvetRouteImport.update({
+  id: '/journey/tvet',
+  path: '/journey/tvet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResultsResultIdRoute = ResultsResultIdRouteImport.update({
+  id: '/results/$resultId',
+  path: '/results/$resultId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -264,60 +264,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/universities': {
-      id: '/universities'
-      path: '/universities'
-      fullPath: '/universities'
-      preLoaderRoute: typeof UniversitiesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tvet-colleges': {
-      id: '/tvet-colleges'
-      path: '/tvet-colleges'
-      fullPath: '/tvet-colleges'
-      preLoaderRoute: typeof TvetCollegesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/careers': {
-      id: '/careers'
-      path: '/careers'
-      fullPath: '/careers'
-      preLoaderRoute: typeof CareersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/bursaries': {
-      id: '/bursaries'
-      path: '/bursaries'
-      fullPath: '/bursaries'
-      preLoaderRoute: typeof BursariesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -327,39 +278,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/results/$resultId': {
-      id: '/results/$resultId'
-      path: '/results/$resultId'
-      fullPath: '/results/$resultId'
-      preLoaderRoute: typeof ResultsResultIdRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/journey/tvet': {
-      id: '/journey/tvet'
-      path: '/journey/tvet'
-      fullPath: '/journey/tvet'
-      preLoaderRoute: typeof JourneyTvetRouteImport
+    '/bursaries': {
+      id: '/bursaries'
+      path: '/bursaries'
+      fullPath: '/bursaries'
+      preLoaderRoute: typeof BursariesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/journey/nsfas': {
-      id: '/journey/nsfas'
-      path: '/journey/nsfas'
-      fullPath: '/journey/nsfas'
-      preLoaderRoute: typeof JourneyNsfasRouteImport
+    '/careers': {
+      id: '/careers'
+      path: '/careers'
+      fullPath: '/careers'
+      preLoaderRoute: typeof CareersRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/journey/grade-12': {
-      id: '/journey/grade-12'
-      path: '/journey/grade-12'
-      fullPath: '/journey/grade-12'
-      preLoaderRoute: typeof JourneyGrade12RouteImport
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tvet-colleges': {
+      id: '/tvet-colleges'
+      path: '/tvet-colleges'
+      fullPath: '/tvet-colleges'
+      preLoaderRoute: typeof TvetCollegesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/universities': {
+      id: '/universities'
+      path: '/universities'
+      fullPath: '/universities'
+      preLoaderRoute: typeof UniversitiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/dashboard': {
+      id: '/admin/dashboard'
+      path: '/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AdminDashboardRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/journey/$slug': {
+      id: '/journey/$slug'
+      path: '/journey/$slug'
+      fullPath: '/journey/$slug'
+      preLoaderRoute: typeof JourneySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/journey/bursary': {
@@ -369,26 +362,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JourneyBursaryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/journey/$slug': {
-      id: '/journey/$slug'
-      path: '/journey/$slug'
-      fullPath: '/journey/$slug'
-      preLoaderRoute: typeof JourneySlugRouteImport
+    '/journey/grade-12': {
+      id: '/journey/grade-12'
+      path: '/journey/grade-12'
+      fullPath: '/journey/grade-12'
+      preLoaderRoute: typeof JourneyGrade12RouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof AuthRoute
+    '/journey/nsfas': {
+      id: '/journey/nsfas'
+      path: '/journey/nsfas'
+      fullPath: '/journey/nsfas'
+      preLoaderRoute: typeof JourneyNsfasRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/dashboard': {
-      id: '/admin/dashboard'
-      path: '/dashboard'
-      fullPath: '/admin/dashboard'
-      preLoaderRoute: typeof AdminDashboardRouteImport
-      parentRoute: typeof AdminRoute
+    '/journey/tvet': {
+      id: '/journey/tvet'
+      path: '/journey/tvet'
+      fullPath: '/journey/tvet'
+      preLoaderRoute: typeof JourneyTvetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/results/$resultId': {
+      id: '/results/$resultId'
+      path: '/results/$resultId'
+      fullPath: '/results/$resultId'
+      preLoaderRoute: typeof ResultsResultIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
