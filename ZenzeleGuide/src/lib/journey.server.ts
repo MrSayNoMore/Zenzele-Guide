@@ -473,27 +473,59 @@ export async function migrateAnonymousResults(
  * rather than trusting any user id sent in the request body.
  */
 export async function resolveUserId(): Promise<string | null> {
-  try {
-    const { getRequest } = await import("@tanstack/react-start/server");
-    const header = getRequest()?.headers.get("authorization");
-    if (!header?.startsWith("Bearer ")) return null;
-    const token = header.slice("Bearer ".length).trim();
-    if (!token) return null;
-
-    const supabase = await getSupabaseAdmin();
-    const { data, error } = await supabase.auth.getUser(token);
-    if (error || !data.user) return null;
-    return data.user.id;
-  } catch (err) {
-    console.error("Failed to resolve user:", err);
-    return null;
-  }
+  const result = await checkSessionToken();
+  return "userId" in result ? result.userId : null;
 }
 
 export async function requireUserId(): Promise<string> {
-  const userId = await resolveUserId();
-  if (!userId) throw new Error("Please sign in to continue.");
-  return userId;
+  const result = await checkSessionToken();
+  if ("userId" in result) return result.userId;
+  throw new Error(result.problem ?? "Please sign in to continue.");
+}
+
+/**
+ * Verifies the request's bearer token. When a token was sent but can't be
+ * checked, `problem` says why (e.g. missing server settings), so signed-in
+ * visitors aren't just told to sign in again.
+ */
+async function checkSessionToken(): Promise<{ userId: string } | { problem?: string }> {
+  let token: string;
+  try {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const header = getRequest()?.headers.get("authorization");
+    if (!header?.startsWith("Bearer ")) return {};
+    token = header.slice("Bearer ".length).trim();
+    if (!token) return {};
+  } catch (err) {
+    console.error("Failed to read the request:", err);
+    return {};
+  }
+
+  try {
+    const supabase = await getSupabaseAdmin();
+    const { data, error } = await supabase.auth.getUser(token);
+    if (data?.user) return { userId: data.user.id };
+    const status = (error as { status?: number } | null)?.status;
+    console.error("Supabase didn't accept the session token:", status, error?.message);
+    if (/api ?key/i.test(error?.message ?? "")) {
+      return {
+        problem:
+          "The server can't check sign-ins: SUPABASE_SERVICE_ROLE_KEY in Cloudflare is invalid or from another Supabase project.",
+      };
+    }
+    if (status === 401 || status === 403) {
+      return { problem: "Your session has expired. Sign out and sign in again." };
+    }
+    return { problem: `Couldn't check your sign-in (${error?.message ?? "unknown error"}). Try again.` };
+  } catch (err) {
+    console.error("Failed to check the session:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      problem: /Missing Supabase environment/.test(message)
+        ? "The server can't check sign-ins: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY isn't set for the Worker in Cloudflare."
+        : `Couldn't check your sign-in (${message}). Try again.`,
+    };
+  }
 }
 
 /** Raw ownership columns for a result, used to decide what the viewer may do. */

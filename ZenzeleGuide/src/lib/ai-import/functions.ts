@@ -20,6 +20,16 @@ async function requireAdmin(): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
+// Which AI is configured (so the page can say so, and send PDFs if it reads them)
+// ---------------------------------------------------------------------------
+
+export const aiImportInfo = createServerFn({ method: "GET" }).handler(async () => {
+  await requireAdmin();
+  const { aiInfo } = await import("./ai.server");
+  return aiInfo();
+});
+
+// ---------------------------------------------------------------------------
 // Web page -> text
 // ---------------------------------------------------------------------------
 
@@ -73,26 +83,60 @@ export const fetchPageText = createServerFn({ method: "POST" })
 
 export const aiExtractChunk = createServerFn({ method: "POST" })
   .validator(
-    z.object({ uploadId: z.string().uuid(), chunkIndex: z.number().int().min(0).max(500) }),
+    z.object({
+      uploadId: z.string().uuid(),
+      chunkIndex: z.number().int().min(0).max(500),
+      // This section's pages as a PDF (base64), for an AI that reads PDFs.
+      // Optional: without it the AI reads the extracted text instead.
+      pdfBase64: z
+        .string()
+        .max(20_000_000)
+        .regex(/^[A-Za-z0-9+/]*={0,2}$/)
+        .optional(),
+    }),
   )
   .handler(async ({ data }) => {
     await requireAdmin();
     const db = await admin();
-    const { chunkText, checkCourseDraft, checkBursaryDraft, withVerifier, normalise } =
-      await import("./shared");
-    const { extractDrafts, verifyDrafts, groqModel, RateLimitError } =
-      await import("./groq.server");
+    const {
+      chunkText,
+      checkCourseDraft,
+      checkBursaryDraft,
+      withVerifier,
+      normalise,
+      parsePageRange,
+      pageChunks,
+      textOfPages,
+      looksScanned,
+    } = await import("./shared");
+    const { extractDrafts, verifyDrafts, aiModel, RateLimitError } = await import("./ai.server");
 
     const { data: upload, error } = await db
       .from("prospectus_uploads")
-      .select("id, content_type, source_text, university_id, universities(name)")
+      .select(
+        "id, content_type, source_text, page_range, chunk_pages, university_id, universities(name)",
+      )
       .eq("id", data.uploadId)
       .single();
     if (error || !upload) throw new Error("Import not found.");
     if (!upload.source_text) throw new Error("This import has no text to read.");
 
-    const chunks = chunkText(upload.source_text);
-    if (data.chunkIndex >= chunks.length) throw new Error("No such section.");
+    // Sections are runs of pages when the AI reads the PDF itself, otherwise
+    // fixed-size pieces of text.
+    const range = upload.chunk_pages ? parsePageRange(upload.page_range) : null;
+    const pageRuns = range ? pageChunks(range[0], range[1], upload.chunk_pages!) : null;
+    const chunkCount = pageRuns ? pageRuns.length : chunkText(upload.source_text).length;
+    if (data.chunkIndex >= chunkCount) throw new Error("No such section.");
+    const pages = pageRuns?.[data.chunkIndex];
+    const sectionText = pages
+      ? textOfPages(upload.source_text, pages.from, pages.to)
+      : chunkText(upload.source_text)[data.chunkIndex];
+    const scanned = Boolean(pages) && looksScanned(sectionText);
+    if (scanned && !data.pdfBase64) {
+      throw new Error(
+        `Pages ${pages!.from}-${pages!.to} are scanned images with no text. Start a new import with the PDF so the AI can read them.`,
+      );
+    }
     const contentType = upload.content_type as "courses" | "bursaries";
     const universityName = (upload.universities as { name: string } | null)?.name;
 
@@ -112,16 +156,18 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
 
     await db
       .from("prospectus_uploads")
-      .update({ status: "extracting", ai_model: groqModel() })
+      .update({ status: "extracting", ai_model: aiModel() })
       .eq("id", upload.id);
 
     let drafts;
     let verdicts;
     try {
-      drafts = await extractDrafts(contentType, chunks[data.chunkIndex], {
+      drafts = await extractDrafts(contentType, sectionText, {
         universityName,
         chunkNumber: data.chunkIndex + 1,
-        chunkCount: chunks.length,
+        chunkCount,
+        pdfBase64: data.pdfBase64,
+        pages,
       });
       try {
         verdicts = await verifyDrafts(drafts);
@@ -173,6 +219,14 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
           ? checkCourseDraft(d as never, upload.source_text, subjects ?? [], existingNames)
           : checkBursaryDraft(d as never, upload.source_text, existingNames);
       const checks = withVerifier(base, verdicts[i]);
+      if (scanned) {
+        checks.status = "attention";
+        checks.issues.unshift({
+          field: "notes",
+          severity: "high",
+          message: `Pages ${pages!.from}-${pages!.to} are scanned images, so the quotes couldn't be checked automatically. Check every value against the PDF yourself.`,
+        });
+      }
       rows.push({
         upload_id: upload.id,
         target_table: contentType,
@@ -198,7 +252,7 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
       .from("prospectus_uploads")
       .update({
         chunks_done: done,
-        status: done >= chunks.length ? "extracted" : "extracting",
+        status: done >= chunkCount ? "extracted" : "extracting",
         error_message: null,
       })
       .eq("id", upload.id);
