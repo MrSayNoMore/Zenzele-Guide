@@ -33,7 +33,7 @@ export default defineConfig(async ({ command }) => {
         // SUPABASE_URL). Without this, every `wrangler deploy` removes them
         // because the generated wrangler.json lists no vars. Secrets are kept
         // either way.
-        cloudflare: { wrangler: { keep_vars: true } },
+        cloudflare: { wrangler: { name: "zenzele-guide", keep_vars: true } },
       }),
     );
   }

@@ -132,40 +132,8 @@ function Landing() {
               </ul>
             </div>
 
-            <div className="zg-in relative mx-auto w-full max-w-md md:max-w-none" style={{ animationDelay: "150ms" }}>
-              {/* tilted card behind for depth */}
-              <div
-                aria-hidden
-                className="absolute inset-0 translate-x-3 translate-y-3 rotate-[3deg] rounded-xl bg-[var(--brand-umhlaba)]"
-              >
-                <div className="zg-ndebele absolute inset-x-0 bottom-0 h-4 rounded-b-xl opacity-80" />
-              </div>
-              <div className="relative">
-                <ApsPreview />
-              </div>
-
-              {/* floating highlights */}
-              <div className="zg-float absolute -top-7 right-28 hidden items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs shadow-lg sm:flex">
-                <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
-                  <ShieldCheck className="h-4 w-4" />
-                </span>
-                <span>
-                  <span className="block font-semibold text-foreground">NSFAS</span>
-                  <span className="text-muted-foreground">Likely eligible</span>
-                </span>
-              </div>
-              <div
-                className="zg-float absolute -bottom-12 right-8 hidden items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs shadow-lg sm:flex"
-                style={{ animationDelay: "1.5s" }}
-              >
-                <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent/40 text-accent-foreground">
-                  <Wallet className="h-4 w-4" />
-                </span>
-                <span>
-                  <span className="block font-semibold text-foreground">3 bursaries</span>
-                  <span className="text-muted-foreground">match this profile</span>
-                </span>
-              </div>
+            <div className="zg-in mx-auto w-full max-w-md md:max-w-none" style={{ animationDelay: "150ms" }}>
+              <HowItWorksPanel />
             </div>
           </div>
         </section>
@@ -281,70 +249,70 @@ function Landing() {
   );
 }
 
-/* ─────────────── Hero visual: an example of the product output ─────────────── */
-function ApsPreview() {
-  const subjects: [string, number][] = [
-    ["English HL", 72],
-    ["isiZulu FAL", 76],
-    ["Mathematics", 68],
-    ["Physical Sciences", 64],
-    ["Life Sciences", 75],
-    ["Geography", 70],
-  ];
-  const matches: [string, string, "Eligible" | "Borderline"][] = [
-    ["BSc Life Sciences", "University of Pretoria", "Eligible"],
-    ["BCom Accounting", "University of Johannesburg", "Eligible"],
-    ["BSc Engineering", "Wits University", "Borderline"],
+/* ─────────────── Hero visual: how Zenzele works (facts only, no sample data) ─────────────── */
+const NSC_LEVELS: [level: number, range: string][] = [
+  [7, "80–100"],
+  [6, "70–79"],
+  [5, "60–69"],
+  [4, "50–59"],
+  [3, "40–49"],
+  [2, "30–39"],
+  [1, "0–29"],
+];
+
+function HowItWorksPanel() {
+  const steps: [title: string, body: string][] = [
+    ["Enter your marks", "Use your latest report or final NSC results. No account needed."],
+    [
+      "We apply each institution's rules",
+      "Your APS is worked out the way each university calculates it, including subject minimums.",
+    ],
+    [
+      "See where you qualify",
+      "Programmes, TVET colleges and bursaries that fit, with the reason behind every match.",
+    ],
   ];
 
   return (
-    <div
-      className="rounded-xl border border-border bg-card shadow-[0_20px_40px_-24px_rgba(8,60,48,0.25)]"
-      aria-label="Example APS result"
-      role="img"
-    >
-      <div className="flex items-center justify-between border-b border-border px-5 py-4">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Example result</p>
-          <p className="mt-0.5 text-sm font-semibold text-foreground">APS summary</p>
-        </div>
-        <div className="text-right">
-          <p className="text-3xl font-semibold leading-none text-[var(--brand-umhlaba)]">34</p>
-          <p className="mt-1 text-xs text-muted-foreground">APS points</p>
-        </div>
+    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-[0_24px_48px_-32px_rgba(8,60,48,0.35)]">
+      <div className="border-b border-border px-6 py-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">How it works</p>
+        <p className="mt-1 font-sans text-lg font-semibold text-foreground">
+          From your marks to real options
+        </p>
       </div>
 
-      <dl className="divide-y divide-border px-5">
-        {subjects.map(([name, mark]) => (
-          <div key={name} className="flex items-center gap-4 py-2.5 text-sm">
-            <dt className="w-36 shrink-0 text-muted-foreground">{name}</dt>
-            <dd className="flex flex-1 items-center gap-3">
-              <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                <span className="zg-fill block h-full rounded-full bg-primary" style={{ width: `${mark}%` }} />
-              </span>
-              <span className="w-9 text-right font-medium tabular-nums text-foreground">{mark}%</span>
-            </dd>
-          </div>
+      <ol className="space-y-5 px-6 py-6">
+        {steps.map(([title, body], i) => (
+          <li key={title} className="flex gap-4">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-sm font-semibold tabular-nums text-[var(--brand-umhlaba)]">
+              {i + 1}
+            </span>
+            <div>
+              <p className="font-medium text-foreground">{title}</p>
+              <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{body}</p>
+            </div>
+          </li>
         ))}
-      </dl>
+      </ol>
 
-      <div className="border-t border-border bg-muted/40 px-5 py-4">
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Programme matches</p>
-        <ul className="mt-3 space-y-2.5">
-          {matches.map(([prog, uni, status]) => (
-            <li key={prog} className="flex items-center justify-between gap-3 text-sm">
-              <div className="min-w-0">
-                <p className="truncate font-medium text-foreground">{prog}</p>
-                <p className="truncate text-xs text-muted-foreground">{uni}</p>
-              </div>
+      <div className="border-t border-border bg-muted/40 px-6 py-5">
+        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          NSC achievement levels <span className="normal-case tracking-normal">(% mark)</span>
+        </p>
+        <ul className="mt-3 grid grid-cols-7 gap-1" aria-label="NSC achievement levels by percentage">
+          {NSC_LEVELS.map(([level, range]) => (
+            <li key={level} className="text-center">
               <span
-                className={
-                  status === "Eligible"
-                    ? "shrink-0 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-[var(--brand-umhlaba)]"
-                    : "shrink-0 rounded-md bg-accent/30 px-2 py-0.5 text-xs font-medium text-accent-foreground"
-                }
+                className="block rounded-md py-1.5 text-sm font-semibold tabular-nums text-primary-foreground"
+                style={{
+                  backgroundColor: `color-mix(in oklab, var(--brand-umhlaba) ${40 + level * 8.5}%, white)`,
+                }}
               >
-                {status}
+                {level}
+              </span>
+              <span className="mt-1 block whitespace-nowrap text-[10px] leading-tight tabular-nums text-muted-foreground sm:text-[11px]">
+                {range}
               </span>
             </li>
           ))}

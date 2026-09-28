@@ -5,6 +5,7 @@
 // AI_PROVIDER ("gemini" | "groq") picks one; otherwise Gemini is used when its
 // key is set.
 import type { BursaryDraft, ContentType, CourseDraft, VerifierVerdict } from "./shared";
+import { serverEnv } from "@/lib/server-env";
 
 const GEMINI_DEFAULT_MODEL = "gemini-flash-latest";
 const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
@@ -18,9 +19,9 @@ export class RateLimitError extends Error {
 type Provider = "gemini" | "groq";
 
 function provider(): Provider {
-  const chosen = process.env.AI_PROVIDER?.trim().toLowerCase();
+  const chosen = serverEnv("AI_PROVIDER")?.trim().toLowerCase();
   if (chosen === "gemini" || chosen === "groq") return chosen;
-  return process.env.GEMINI_API_KEY || !process.env.GROQ_API_KEY ? "gemini" : "groq";
+  return serverEnv("GEMINI_API_KEY") || !serverEnv("GROQ_API_KEY") ? "gemini" : "groq";
 }
 
 export function aiInfo() {
@@ -29,14 +30,14 @@ export function aiInfo() {
     provider: p,
     model: aiModel(),
     readsPdf: p === "gemini",
-    configured: Boolean(p === "gemini" ? process.env.GEMINI_API_KEY : process.env.GROQ_API_KEY),
+    configured: Boolean(p === "gemini" ? serverEnv("GEMINI_API_KEY") : serverEnv("GROQ_API_KEY")),
   };
 }
 
 export function aiModel(): string {
   return provider() === "gemini"
-    ? process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL
-    : process.env.GROQ_MODEL || GROQ_DEFAULT_MODEL;
+    ? serverEnv("GEMINI_MODEL") || GEMINI_DEFAULT_MODEL
+    : serverEnv("GROQ_MODEL") || GROQ_DEFAULT_MODEL;
 }
 
 const clampRetry = (seconds: number) => Math.min(Math.max(Math.ceil(seconds), 2), 120);
@@ -69,9 +70,9 @@ async function geminiJson(
   maxTokens: number,
   pdfBase64?: string,
 ): Promise<unknown> {
-  const key = process.env.GEMINI_API_KEY;
+  const key = serverEnv("GEMINI_API_KEY");
   if (!key) throw new Error("GEMINI_API_KEY isn't set. Add it as a Worker secret in Cloudflare.");
-  const base = process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com/v1beta";
+  const base = serverEnv("GEMINI_BASE_URL") || "https://generativelanguage.googleapis.com/v1beta";
 
   const parts: Record<string, unknown>[] = [];
   if (pdfBase64) parts.push({ inline_data: { mime_type: "application/pdf", data: pdfBase64 } });
@@ -131,9 +132,9 @@ async function geminiJson(
 }
 
 async function groqJson(system: string, user: string, maxTokens: number): Promise<unknown> {
-  const key = process.env.GROQ_API_KEY;
+  const key = serverEnv("GROQ_API_KEY");
   if (!key) throw new Error("GROQ_API_KEY isn't set. Add it as a Worker secret in Cloudflare.");
-  const base = process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1";
+  const base = serverEnv("GROQ_BASE_URL") || "https://api.groq.com/openai/v1";
 
   const res = await fetch(`${base}/chat/completions`, {
     method: "POST",
