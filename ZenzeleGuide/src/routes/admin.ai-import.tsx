@@ -26,6 +26,7 @@ import { isHttpUrl, labelFor, FIELDS_OF_STUDY } from "@/lib/admin-options";
 import {
   chunkText,
   pageChunks,
+  parsePageRange,
   PDF_PAGES_PER_CHUNK,
   type BursaryDraft,
   type CourseDraft,
@@ -573,6 +574,7 @@ function Review({ uploadId }: { uploadId: string }) {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<"pending" | "attention" | "passed" | "done">("pending");
   const [retrying, setRetrying] = useState(false);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
 
   const upload = useQuery({
     queryKey: ["admin", "ai-import", uploadId],
@@ -580,7 +582,7 @@ function Review({ uploadId }: { uploadId: string }) {
       const { data, error } = await supabase
         .from("prospectus_uploads")
         .select(
-          "id, filename, content_type, status, error_message, source_url, source_kind, page_range, ai_model, chunks_done, chunks_total, universities(name)",
+          "id, filename, content_type, status, error_message, source_url, source_kind, page_range, chunk_pages, ai_model, chunks_done, chunks_total, universities(name)",
         )
         .eq("id", uploadId)
         .single();
@@ -620,19 +622,50 @@ function Review({ uploadId }: { uploadId: string }) {
         (filter === "pending" || (filter === "passed") === (d.checks.status === "passed")),
   );
 
-  const resume = async () => {
+  /** Reads the given sections again (default: the unfinished ones). */
+  const resume = async (only?: number[]) => {
     if (!upload.data?.chunks_total) return;
     setRetrying(true);
     try {
-      for (let i = upload.data.chunks_done; i < upload.data.chunks_total; i++) {
+      // With the same PDF chosen again, the AI reads the pages themselves;
+      // otherwise it reads the text saved with the import.
+      const range = parsePageRange(upload.data.page_range);
+      const runs =
+        upload.data.chunk_pages && range
+          ? pageChunks(range[0], range[1], upload.data.chunk_pages)
+          : null;
+      let splitter: Awaited<
+        ReturnType<typeof import("@/lib/ai-import/pdf").openPdfSplitter>
+      > | null = null;
+      if (resumeFile && runs && range) {
+        const pdf = await import("@/lib/ai-import/pdf");
+        if ((await pdf.pdfPageCount(resumeFile)) < range[1])
+          throw new Error(
+            `That PDF has fewer than ${range[1]} pages. Choose the same file you imported.`,
+          );
+        splitter = await pdf.openPdfSplitter(resumeFile);
+      }
+      const sections =
+        only ??
+        Array.from(
+          { length: upload.data.chunks_total - upload.data.chunks_done },
+          (_, k) => upload.data!.chunks_done + k,
+        );
+      for (const i of sections) {
+        const pdfBase64 =
+          splitter && runs?.[i]
+            ? ((await splitter.pages(runs[i].from, runs[i].to)) ?? undefined)
+            : undefined;
         for (let attempt = 0; attempt < 6; attempt++) {
-          const res = await aiExtractChunk({ data: { uploadId, chunkIndex: i } });
+          const res = await aiExtractChunk({ data: { uploadId, chunkIndex: i, pdfBase64 } });
           if (!res.rateLimitedFor) break;
           await sleep(res.rateLimitedFor * 1000);
         }
         await queryClient.invalidateQueries({ queryKey: ["admin"] });
       }
-      toast.success("Finished reading the remaining sections");
+      toast.success(
+        only ? "Finished reading those pages" : "Finished reading the remaining sections",
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Retry failed");
     } finally {
@@ -646,6 +679,12 @@ function Review({ uploadId }: { uploadId: string }) {
   if (upload.error || !upload.data) return <EmptyState>Import not found.</EmptyState>;
   const u = upload.data;
   const unfinished = (u.chunks_total ?? 0) > u.chunks_done;
+  const messageLines = (u.error_message ?? "").split("\n").filter(Boolean);
+  const notices = messageLines.filter((l) => l.startsWith("Not read ("));
+  const noticeSections = notices
+    .map((l) => Number(/^Not read \(section (\d+)\)/.exec(l)?.[1]) - 1)
+    .filter((i) => i >= 0);
+  const lastError = messageLines.filter((l) => !l.startsWith("Not read (")).pop();
 
   return (
     <div className="space-y-5">
@@ -676,15 +715,59 @@ function Review({ uploadId }: { uploadId: string }) {
           <div className="mt-3 flex flex-wrap items-center gap-3 rounded-md bg-accent/20 px-3 py-2 text-sm">
             <span>
               Read {u.chunks_done} of {u.chunks_total} sections
-              {u.error_message ? `: ${u.error_message}` : ""}.
+              {lastError ? `: ${lastError}` : ""}.
             </span>
+            {u.chunk_pages && (
+              <label className="flex items-center gap-2 text-xs">
+                <span>Optional: choose the same PDF so the AI can read the pages</span>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(e) => setResumeFile(e.target.files?.[0] ?? null)}
+                  className="text-xs"
+                />
+              </label>
+            )}
             <button
-              onClick={resume}
+              onClick={() => resume()}
               disabled={retrying}
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60"
             >
               {retrying && <Loader2 className="h-3 w-3 animate-spin" />} Retry remaining sections
             </button>
+          </div>
+        )}
+        {notices.length > 0 && (
+          <div className="mt-3 space-y-2 rounded-md bg-destructive/10 px-3 py-2 text-sm">
+            <ul className="space-y-1 text-destructive">
+              {notices.map((n) => (
+                <li key={n} className="flex gap-1.5">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  {n.replace(/^Not read \(section \d+\): /, "")}
+                </li>
+              ))}
+            </ul>
+            {u.chunk_pages && !unfinished && (
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="flex items-center gap-2 text-xs">
+                  <span>Choose the same PDF:</span>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(e) => setResumeFile(e.target.files?.[0] ?? null)}
+                    className="text-xs"
+                  />
+                </label>
+                <button
+                  onClick={() => resume(noticeSections)}
+                  disabled={retrying || !resumeFile}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+                >
+                  {retrying && <Loader2 className="h-3 w-3 animate-spin" />} Read these pages from
+                  the PDF
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

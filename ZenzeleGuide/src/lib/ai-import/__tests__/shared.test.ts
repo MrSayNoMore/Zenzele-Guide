@@ -350,13 +350,22 @@ describe("PDF page sections", () => {
   });
 
   it("returns the text of just the requested pages and spots scanned pages", async () => {
-    const { textOfPages, looksScanned } = await import("../shared");
+    const { textOfPages, scannedPages, listPages } = await import("../shared");
     const src =
       "--- Page 1 ---\nIntro\n\n--- Page 2 ---\nBSc Civil\n\n--- Page 3 ---\n\n\n--- Page 4 ---\nBCom";
     expect(textOfPages(src, 2, 2)).toBe("--- Page 2 ---\nBSc Civil");
     expect(textOfPages(src, 2, 4)).toContain("BCom");
     expect(textOfPages(src, 2, 4)).not.toContain("Intro");
-    expect(looksScanned(textOfPages(src, 3, 3))).toBe(true);
-    expect(looksScanned("--- Page 2 ---\n" + "Mathematics level 6 ".repeat(10))).toBe(false);
+    const text = "Mathematics level 6 ".repeat(10);
+    // One scanned page among text pages is still found.
+    const section = `--- Page 1 ---\n${text}\n\n--- Page 2 ---\n\n\n--- Page 3 ---\n${text}\n\n--- Page 4 ---\n  \n`;
+    expect(scannedPages(section)).toEqual([2, 4]);
+    expect(scannedPages(textOfPages(src, 3, 3))).toEqual([3]);
+    expect(scannedPages(`--- Page 9 ---\n${text}`)).toEqual([]);
+    expect([listPages([6]), listPages([6, 7]), listPages([3, 6, 7])]).toEqual([
+      "6",
+      "6 and 7",
+      "3, 6 and 7",
+    ]);
   });
 });
