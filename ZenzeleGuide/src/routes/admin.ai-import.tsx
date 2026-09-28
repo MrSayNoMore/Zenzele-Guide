@@ -25,12 +25,14 @@ import {
 import { isHttpUrl, labelFor, FIELDS_OF_STUDY } from "@/lib/admin-options";
 import {
   chunkText,
+  pageChunks,
+  PDF_PAGES_PER_CHUNK,
   type BursaryDraft,
   type CourseDraft,
   type DraftChecks,
   type Issue,
 } from "@/lib/ai-import/shared";
-import { aiExtractChunk, fetchPageText } from "@/lib/ai-import/functions";
+import { aiExtractChunk, aiImportInfo, fetchPageText } from "@/lib/ai-import/functions";
 import { promoteDraft, rejectDraft, type DraftRow } from "@/lib/ai-import/promote";
 
 export const Route = createFileRoute("/admin/ai-import")({
@@ -94,6 +96,13 @@ function NewImport() {
     },
   });
 
+  const ai = useQuery({
+    queryKey: ["admin", "ai-info"],
+    queryFn: () => aiImportInfo(),
+    staleTime: Infinity,
+  });
+  const readsPdf = ai.data?.readsPdf ?? false;
+
   const imports = useQuery({
     queryKey: ["admin", "ai-imports"],
     queryFn: async () => {
@@ -130,9 +139,7 @@ function NewImport() {
       setFromPage("1");
       setToPage(String(Math.min(n, 20)));
     } catch {
-      setError(
-        "Couldn't read that PDF. Is it a scanned image? Scanned PDFs have no text; use Paste text instead.",
-      );
+      setError("Couldn't open that PDF. It may be damaged or password-protected.");
     }
   };
 
@@ -146,6 +153,7 @@ function NewImport() {
       let filename = "";
       let officialUrl = sourceUrl.trim();
       let pageRange: string | null = null;
+      let pdfRuns: { from: number; to: number }[] | null = null;
 
       if (sourceKind === "pdf") {
         if (!file) throw new Error("Choose a PDF file.");
@@ -171,6 +179,7 @@ function NewImport() {
         );
         filename = file.name;
         pageRange = `${from}-${to}`;
+        if (readsPdf) pdfRuns = pageChunks(from, to);
       } else if (sourceKind === "url") {
         if (!isHttpUrl(url.trim()))
           throw new Error("Enter a full web address starting with https://");
@@ -190,7 +199,8 @@ function NewImport() {
           "Add the official source link (where this information is published), so learners can check it.",
         );
       }
-      if (text.replace(/--- Page \d+ ---/g, "").trim().length < 200) {
+      // An AI that reads the PDF itself can handle scanned pages.
+      if (!pdfRuns && text.replace(/--- Page \d+ ---/g, "").trim().length < 200) {
         throw new Error(
           "Couldn't find enough text. If the PDF is scanned, copy the text and use Paste text.",
         );
@@ -199,7 +209,7 @@ function NewImport() {
         throw new Error("That's too much text for one import. Choose fewer pages.");
 
       // 2. Save the import
-      const chunks = chunkText(text);
+      const total = pdfRuns ? pdfRuns.length : chunkText(text).length;
       const { data: auth } = await supabase.auth.getUser();
       const { data: row, error } = await supabase
         .from("prospectus_uploads")
@@ -214,7 +224,8 @@ function NewImport() {
           intake_year: intakeYear ? Number(intakeYear) : null,
           uploaded_by: auth.user?.id ?? null,
           status: "extracting",
-          chunks_total: chunks.length,
+          chunks_total: total,
+          chunk_pages: pdfRuns ? PDF_PAGES_PER_CHUNK : null,
         })
         .select("id")
         .single();
@@ -222,10 +233,18 @@ function NewImport() {
 
       // 3. Extract section by section, waiting out free-tier rate limits
       let created = 0;
-      for (let i = 0; i < chunks.length; i++) {
-        setProgress({ label: "AI is reading and checking", done: i, total: chunks.length });
+      const splitter =
+        pdfRuns && file ? await (await import("@/lib/ai-import/pdf")).openPdfSplitter(file) : null;
+      for (let i = 0; i < total; i++) {
+        setProgress({ label: "AI is reading and checking", done: i, total });
+        const pdfBase64 =
+          splitter && pdfRuns
+            ? ((await splitter.pages(pdfRuns[i].from, pdfRuns[i].to)) ?? undefined)
+            : undefined;
         for (let attempt = 0; attempt < 6; attempt++) {
-          const res = await aiExtractChunk({ data: { uploadId: row.id, chunkIndex: i } });
+          const res = await aiExtractChunk({
+            data: { uploadId: row.id, chunkIndex: i, pdfBase64 },
+          });
           if (!res.rateLimitedFor) {
             created += res.created;
             break;
@@ -234,7 +253,7 @@ function NewImport() {
             setProgress({
               label: "AI is reading and checking",
               done: i,
-              total: chunks.length,
+              total,
               waiting: s,
             });
             await sleep(1000);
@@ -386,8 +405,9 @@ function NewImport() {
               </div>
             )}
             <p className="text-xs text-muted-foreground">
-              Choose just the pages with admission requirements (up to 80). Scanned PDFs have no
-              text; paste the text instead.
+              {readsPdf
+                ? "Choose just the pages with admission requirements (up to 80). The AI reads the pages themselves, including tables and scanned pages."
+                : "Choose just the pages with admission requirements (up to 80). Scanned PDFs have no text; paste the text instead."}
             </p>
           </div>
         )}
@@ -462,13 +482,31 @@ function NewImport() {
             )}
           </div>
         ) : (
-          <button
-            type="submit"
-            disabled={run.isPending}
-            className="inline-flex h-11 items-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-          >
-            <Sparkles className="h-4 w-4" /> Start AI extraction
-          </button>
+          <div className="space-y-2">
+            {ai.data && (
+              <p className="text-xs text-muted-foreground">
+                {ai.data.configured ? (
+                  <>
+                    AI: {ai.data.provider === "gemini" ? "Google Gemini" : "Groq"} ({ai.data.model})
+                    {ai.data.readsPdf ? " · reads PDF pages directly" : " · reads text only"}
+                  </>
+                ) : (
+                  <span className="text-destructive">
+                    The AI key isn't set up yet. Add{" "}
+                    {ai.data.provider === "gemini" ? "GEMINI_API_KEY" : "GROQ_API_KEY"} as a secret
+                    in Cloudflare.
+                  </span>
+                )}
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={run.isPending}
+              className="inline-flex h-11 items-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            >
+              <Sparkles className="h-4 w-4" /> Start AI extraction
+            </button>
+          </div>
         )}
       </form>
 

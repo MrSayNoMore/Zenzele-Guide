@@ -600,6 +600,7 @@ export type Database = {
           source_text: string | null
           page_range: string | null
           ai_model: string | null
+          chunk_pages: number | null
           chunks_total: number | null
           chunks_done: number
         }
@@ -620,6 +621,7 @@ export type Database = {
           source_text?: string | null
           page_range?: string | null
           ai_model?: string | null
+          chunk_pages?: number | null
           chunks_total?: number | null
           chunks_done?: number
         }
@@ -640,6 +642,7 @@ export type Database = {
           source_text?: string | null
           page_range?: string | null
           ai_model?: string | null
+          chunk_pages?: number | null
           chunks_total?: number | null
           chunks_done?: number
         }

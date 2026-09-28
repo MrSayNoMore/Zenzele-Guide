@@ -1,8 +1,13 @@
-// Server-only: calls Groq (OpenAI-compatible chat completions API).
-// Secrets: GROQ_API_KEY. Optional: GROQ_MODEL, GROQ_BASE_URL.
+// Server-only: calls the AI that drafts imports. Two providers:
+// - Gemini (preferred): reads PDF pages directly, including tables and scans.
+//   Secret: GEMINI_API_KEY. Optional: GEMINI_MODEL, GEMINI_BASE_URL.
+// - Groq: text only. Secret: GROQ_API_KEY. Optional: GROQ_MODEL, GROQ_BASE_URL.
+// AI_PROVIDER ("gemini" | "groq") picks one; otherwise Gemini is used when its
+// key is set.
 import type { BursaryDraft, ContentType, CourseDraft, VerifierVerdict } from "./shared";
 
-const DEFAULT_MODEL = "llama-3.3-70b-versatile";
+const GEMINI_DEFAULT_MODEL = "gemini-flash-latest";
+const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
 
 export class RateLimitError extends Error {
   constructor(public retryAfterSeconds: number) {
@@ -10,11 +15,122 @@ export class RateLimitError extends Error {
   }
 }
 
-export function groqModel(): string {
-  return process.env.GROQ_MODEL || DEFAULT_MODEL;
+type Provider = "gemini" | "groq";
+
+function provider(): Provider {
+  const chosen = process.env.AI_PROVIDER?.trim().toLowerCase();
+  if (chosen === "gemini" || chosen === "groq") return chosen;
+  return process.env.GEMINI_API_KEY || !process.env.GROQ_API_KEY ? "gemini" : "groq";
 }
 
-async function chatJson(system: string, user: string, maxTokens: number): Promise<unknown> {
+export function aiInfo() {
+  const p = provider();
+  return {
+    provider: p,
+    model: aiModel(),
+    readsPdf: p === "gemini",
+    configured: Boolean(p === "gemini" ? process.env.GEMINI_API_KEY : process.env.GROQ_API_KEY),
+  };
+}
+
+export function aiModel(): string {
+  return provider() === "gemini"
+    ? process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL
+    : process.env.GROQ_MODEL || GROQ_DEFAULT_MODEL;
+}
+
+const clampRetry = (seconds: number) => Math.min(Math.max(Math.ceil(seconds), 2), 120);
+
+function parseJson(content: string): unknown {
+  // Tolerate a model that wraps its JSON in a code fence.
+  const cleaned = content.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    throw new Error("The AI returned something that wasn't valid JSON. Try this section again.");
+  }
+}
+
+/** One AI call that must return JSON. `pdfBase64` is only read by Gemini. */
+async function chatJson(
+  system: string,
+  user: string,
+  maxTokens: number,
+  pdfBase64?: string,
+): Promise<unknown> {
+  return provider() === "gemini"
+    ? geminiJson(system, user, maxTokens, pdfBase64)
+    : groqJson(system, user, maxTokens);
+}
+
+async function geminiJson(
+  system: string,
+  user: string,
+  maxTokens: number,
+  pdfBase64?: string,
+): Promise<unknown> {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) throw new Error("GEMINI_API_KEY isn't set. Add it as a Worker secret in Cloudflare.");
+  const base = process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com/v1beta";
+
+  const parts: Record<string, unknown>[] = [];
+  if (pdfBase64) parts.push({ inline_data: { mime_type: "application/pdf", data: pdfBase64 } });
+  parts.push({ text: user });
+
+  const res = await fetch(`${base}/models/${encodeURIComponent(aiModel())}:generateContent`, {
+    method: "POST",
+    headers: { "x-goog-api-key": key, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts }],
+      generationConfig: {
+        temperature: 0,
+        // Generous: newer models spend part of this budget thinking.
+        maxOutputTokens: Math.max(maxTokens * 4, 16_000),
+        responseMimeType: "application/json",
+      },
+    }),
+  });
+
+  if (res.status === 429 || res.status === 503) {
+    const body = (await res.json().catch(() => null)) as {
+      error?: { details?: { retryDelay?: string }[] };
+    } | null;
+    const delay = body?.error?.details?.find((d) => d.retryDelay)?.retryDelay;
+    throw new RateLimitError(clampRetry(delay ? parseFloat(delay) : 30));
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Gemini error ${res.status}: ${body.slice(0, 300)}`);
+  }
+  const data = (await res.json()) as {
+    candidates?: {
+      content?: { parts?: { text?: string; thought?: boolean }[] };
+      finishReason?: string;
+    }[];
+    promptFeedback?: { blockReason?: string };
+  };
+  const candidate = data.candidates?.[0];
+  const text = (candidate?.content?.parts ?? [])
+    .filter((p) => !p.thought && typeof p.text === "string")
+    .map((p) => p.text)
+    .join("");
+  if (!text) {
+    const reason = data.promptFeedback?.blockReason ?? candidate?.finishReason ?? "no answer";
+    throw new Error(
+      reason === "MAX_TOKENS"
+        ? "This section had too much for the AI to answer in one go. Import fewer pages at a time."
+        : `The AI didn't answer (${reason}). Try this section again, or use Paste text.`,
+    );
+  }
+  if (candidate?.finishReason === "MAX_TOKENS")
+    throw new Error(
+      "This section had too much for the AI to answer in one go. Import fewer pages at a time.",
+    );
+  return parseJson(text);
+}
+
+async function groqJson(system: string, user: string, maxTokens: number): Promise<unknown> {
   const key = process.env.GROQ_API_KEY;
   if (!key) throw new Error("GROQ_API_KEY isn't set. Add it as a Worker secret in Cloudflare.");
   const base = process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1";
@@ -23,7 +139,7 @@ async function chatJson(system: string, user: string, maxTokens: number): Promis
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: groqModel(),
+      model: aiModel(),
       temperature: 0,
       max_tokens: maxTokens,
       response_format: { type: "json_object" },
@@ -35,20 +151,14 @@ async function chatJson(system: string, user: string, maxTokens: number): Promis
   });
 
   if (res.status === 429) {
-    const retry = Number(res.headers.get("retry-after")) || 20;
-    throw new RateLimitError(Math.min(Math.max(Math.ceil(retry), 2), 120));
+    throw new RateLimitError(clampRetry(Number(res.headers.get("retry-after")) || 20));
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`Groq error ${res.status}: ${body.slice(0, 300)}`);
   }
   const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-  const content = data.choices?.[0]?.message?.content ?? "";
-  try {
-    return JSON.parse(content);
-  } catch {
-    throw new Error("The AI returned something that wasn't valid JSON. Try this section again.");
-  }
+  return parseJson(data.choices?.[0]?.message?.content ?? "");
 }
 
 // ---------------------------------------------------------------------------
@@ -199,17 +309,31 @@ function toBursary(i: Record<string, unknown>): BursaryDraft {
 export async function extractDrafts(
   contentType: ContentType,
   chunk: string,
-  context: { universityName?: string; chunkNumber: number; chunkCount: number },
+  context: {
+    universityName?: string;
+    chunkNumber: number;
+    chunkCount: number;
+    /** The same pages as a PDF, for an AI that reads PDFs (Gemini). */
+    pdfBase64?: string;
+    pages?: { from: number; to: number };
+  },
 ): Promise<(CourseDraft | BursaryDraft)[]> {
   const header =
     contentType === "courses"
       ? `University: ${context.universityName ?? "unknown"}. Extract every undergraduate programme in this section that has entry requirements.`
       : "Extract the bursary (or bursaries) described in this text.";
-  const user = `${header}\nThis is section ${context.chunkNumber} of ${context.chunkCount}; programmes may be cut off at the edges — skip any you can't see fully.\n\n<document>\n${chunk}\n</document>`;
+  const where = context.pages
+    ? `This is pages ${context.pages.from}-${context.pages.to} (section ${context.chunkNumber} of ${context.chunkCount}); programmes may continue from or onto other pages — skip any you can't see fully.`
+    : `This is section ${context.chunkNumber} of ${context.chunkCount}; programmes may be cut off at the edges — skip any you can't see fully.`;
+  const withPdf = Boolean(context.pdfBase64) && provider() === "gemini";
+  const user = withPdf
+    ? `${header}\n${where}\n\nThe attached PDF is the document: read it carefully, including tables. Below is the text layer extracted from the same pages. For every "quote", copy the words EXACTLY as they appear in this text layer whenever they are there, so they can be checked automatically. If the text layer is empty or garbled (e.g. a scanned page), copy the words exactly as printed in the PDF.\n\n<text_layer>\n${chunk}\n</text_layer>`
+    : `${header}\n${where}\n\n<document>\n${chunk}\n</document>`;
   const raw = await chatJson(
     contentType === "courses" ? COURSE_SYSTEM : BURSARY_SYSTEM,
     user,
     4000,
+    withPdf ? context.pdfBase64 : undefined,
   );
   const items = asItems(raw);
   return contentType === "courses" ? items.map(toCourse) : items.map(toBursary);

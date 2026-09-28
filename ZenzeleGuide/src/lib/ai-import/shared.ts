@@ -3,7 +3,7 @@
 // used on both server and client.
 
 // ---------------------------------------------------------------------------
-// Types the AI must return (see prompts in groq.server.ts)
+// Types the AI must return (see prompts in ai.server.ts)
 // ---------------------------------------------------------------------------
 
 export type Quoted<T> = { value: T | null; quote: string | null };
@@ -73,7 +73,7 @@ export type DraftChecks = {
 // re-derive chunk N from the stored source text.
 // ---------------------------------------------------------------------------
 
-export const CHUNK_CHARS = 12_000; // ~3k tokens: fits Groq's free-tier limits per request
+export const CHUNK_CHARS = 12_000; // ~3k tokens: fits free-tier limits per request
 const CHUNK_OVERLAP = 600; // so a course split across a boundary still appears whole once
 
 export function chunkText(text: string, size = CHUNK_CHARS): string[] {
@@ -95,6 +95,42 @@ export function chunkText(text: string, size = CHUNK_CHARS): string[] {
     start = Math.max(end - CHUNK_OVERLAP, start + 1);
   }
   return chunks;
+}
+
+// When the AI reads PDF pages directly, each section is a fixed run of pages,
+// so section N always maps to the same pages.
+export const PDF_PAGES_PER_CHUNK = 5;
+
+export function parsePageRange(range: string | null | undefined): [number, number] | null {
+  const m = /^(\d+)-(\d+)$/.exec(range ?? "");
+  if (!m) return null;
+  const from = Number(m[1]);
+  const to = Number(m[2]);
+  return from >= 1 && to >= from ? [from, to] : null;
+}
+
+export function pageChunks(from: number, to: number, perChunk = PDF_PAGES_PER_CHUNK) {
+  const out: { from: number; to: number }[] = [];
+  for (let p = from; p <= to; p += perChunk)
+    out.push({ from: p, to: Math.min(to, p + perChunk - 1) });
+  return out;
+}
+
+/** The text of pages `from`..`to`, from text built by extractPdfText ("--- Page N ---" markers). */
+export function textOfPages(source: string, from: number, to: number): string {
+  const parts = source.split(/(?=^--- Page \d+ ---$)/m);
+  return parts
+    .filter((part) => {
+      const n = Number(/^--- Page (\d+) ---$/m.exec(part)?.[1]);
+      return n >= from && n <= to;
+    })
+    .join("")
+    .trim();
+}
+
+/** True when the pages have (almost) no text layer, i.e. they're scanned images. */
+export function looksScanned(pageText: string): boolean {
+  return pageText.replace(/--- Page \d+ ---/g, "").replace(/\s+/g, "").length < 80;
 }
 
 // ---------------------------------------------------------------------------

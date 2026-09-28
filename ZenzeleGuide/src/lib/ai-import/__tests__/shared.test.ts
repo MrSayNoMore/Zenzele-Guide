@@ -335,3 +335,28 @@ describe("web pages", () => {
       expect(isPrivateHost(h)).toBe(false);
   });
 });
+
+describe("PDF page sections", () => {
+  it("splits a page range into fixed runs and parses stored ranges", async () => {
+    const { pageChunks, parsePageRange } = await import("../shared");
+    expect(pageChunks(3, 14, 5)).toEqual([
+      { from: 3, to: 7 },
+      { from: 8, to: 12 },
+      { from: 13, to: 14 },
+    ]);
+    expect(parsePageRange("12-40")).toEqual([12, 40]);
+    expect(parsePageRange("40-12")).toBeNull();
+    expect(parsePageRange(null)).toBeNull();
+  });
+
+  it("returns the text of just the requested pages and spots scanned pages", async () => {
+    const { textOfPages, looksScanned } = await import("../shared");
+    const src =
+      "--- Page 1 ---\nIntro\n\n--- Page 2 ---\nBSc Civil\n\n--- Page 3 ---\n\n\n--- Page 4 ---\nBCom";
+    expect(textOfPages(src, 2, 2)).toBe("--- Page 2 ---\nBSc Civil");
+    expect(textOfPages(src, 2, 4)).toContain("BCom");
+    expect(textOfPages(src, 2, 4)).not.toContain("Intro");
+    expect(looksScanned(textOfPages(src, 3, 3))).toBe(true);
+    expect(looksScanned("--- Page 2 ---\n" + "Mathematics level 6 ".repeat(10))).toBe(false);
+  });
+});
