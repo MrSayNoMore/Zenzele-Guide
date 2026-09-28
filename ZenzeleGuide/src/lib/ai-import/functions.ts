@@ -192,29 +192,39 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
       .update({ status: "extracting", ai_model: aiModel() })
       .eq("id", upload.id);
 
-    let drafts: Awaited<ReturnType<typeof extractDrafts>>;
-    let verdicts: Awaited<ReturnType<typeof verifyDrafts>>;
+    let drafts: Awaited<ReturnType<typeof extractDrafts>>["drafts"];
+    let verdicts: Awaited<ReturnType<typeof verifyDrafts>>["verdicts"];
+    let modelsUsed: string;
     try {
-      drafts = await extractDrafts(contentType, sectionText, {
+      const extracted = await extractDrafts(contentType, sectionText, {
         universityName,
         chunkNumber: data.chunkIndex + 1,
         chunkCount,
         pdfBase64: data.pdfBase64,
         pages,
       });
+      drafts = extracted.drafts;
+      let checkedBy: string | null = null;
+      const unchecked = () => drafts.map(() => undefined);
       try {
-        verdicts = await verifyDrafts(drafts);
+        ({ verdicts, model: checkedBy } = await verifyDrafts(drafts, extracted.model));
       } catch (e) {
         // Don't redo the extraction just because the double-check hit a
         // short limit: wait once, then fall back to "double-check didn't run"
         // (which sends every draft to a human).
         if (e instanceof RateLimitError && e.retryAfterSeconds <= 30) {
           await new Promise((r) => setTimeout(r, e.retryAfterSeconds * 1000));
-          verdicts = await verifyDrafts(drafts).catch(() => drafts.map(() => undefined));
+          ({ verdicts, model: checkedBy } = await verifyDrafts(drafts, extracted.model).catch(
+            () => ({ verdicts: unchecked(), model: null }),
+          ));
         } else {
-          verdicts = drafts.map(() => undefined);
+          verdicts = unchecked();
         }
       }
+      modelsUsed =
+        checkedBy && checkedBy !== extracted.model
+          ? `${extracted.model}, checked by ${checkedBy}`
+          : extracted.model;
     } catch (e) {
       if (e instanceof RateLimitError)
         return {
@@ -298,6 +308,7 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
       if (insertError) throw new Error(insertError.message);
     }
 
+    await db.from("prospectus_uploads").update({ ai_model: modelsUsed }).eq("id", upload.id);
     await finishSection();
 
     return {

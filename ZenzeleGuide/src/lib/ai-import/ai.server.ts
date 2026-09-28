@@ -1,13 +1,22 @@
 // Server-only: calls the AI that drafts imports. Two providers:
 // - Gemini (preferred): reads PDF pages directly, including tables and scans.
-//   Secret: GEMINI_API_KEY. Optional: GEMINI_MODEL, GEMINI_BASE_URL.
+//   Secret: GEMINI_API_KEY. Optional: GEMINI_MODELS (comma-separated, tried in
+//   order; each model has its own free limits), GEMINI_MODEL, GEMINI_BASE_URL.
 // - Groq: text only. Secret: GROQ_API_KEY. Optional: GROQ_MODEL, GROQ_BASE_URL.
 // AI_PROVIDER ("gemini" | "groq") picks one; otherwise Gemini is used when its
 // key is set.
 import type { BursaryDraft, ContentType, CourseDraft, VerifierVerdict } from "./shared";
 import { serverEnv } from "@/lib/server-env";
 
-const GEMINI_DEFAULT_MODEL = "gemini-flash-latest";
+// Tried in order. When one hits its limit (or is busy/unavailable) the next is
+// used, and the double-check prefers a different model from the extraction.
+const GEMINI_DEFAULT_MODELS = [
+  "gemini-3.8-flash",
+  "gemini-3.7-flash",
+  "gemini-3.6-flash",
+  "gemini-3.5-flash",
+  "gemini-2.5-flash",
+];
 const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
 
 /** A short-term limit (per minute, or the AI is busy): wait and try again. */
@@ -28,11 +37,23 @@ function provider(): Provider {
   return serverEnv("GEMINI_API_KEY") || !serverEnv("GROQ_API_KEY") ? "gemini" : "groq";
 }
 
+export function geminiModels(): string[] {
+  const list = serverEnv("GEMINI_MODELS") || serverEnv("GEMINI_MODEL");
+  const models = list
+    ? list
+        .split(",")
+        .map((m) => m.trim())
+        .filter(Boolean)
+    : GEMINI_DEFAULT_MODELS;
+  return [...new Set(models)].slice(0, 10);
+}
+
 export function aiInfo() {
   const p = provider();
   return {
     provider: p,
     model: aiModel(),
+    models: p === "gemini" ? geminiModels() : [aiModel()],
     readsPdf: p === "gemini",
     configured: Boolean(p === "gemini" ? serverEnv("GEMINI_API_KEY") : serverEnv("GROQ_API_KEY")),
   };
@@ -40,7 +61,7 @@ export function aiInfo() {
 
 export function aiModel(): string {
   return provider() === "gemini"
-    ? serverEnv("GEMINI_MODEL") || GEMINI_DEFAULT_MODEL
+    ? geminiModels()[0]
     : serverEnv("GROQ_MODEL") || GROQ_DEFAULT_MODEL;
 }
 
@@ -56,16 +77,38 @@ function parseJson(content: string): unknown {
   }
 }
 
-/** One AI call that must return JSON. `pdfBase64` is only read by Gemini. */
+type AiResult = { data: unknown; model: string };
+
+/**
+ * One AI call that must return JSON. `pdfBase64` is only read by Gemini.
+ * `avoidModel`: prefer a different model (used for the independent double-check).
+ */
 async function chatJson(
   system: string,
   user: string,
   maxTokens: number,
   pdfBase64?: string,
-): Promise<unknown> {
+  avoidModel?: string,
+): Promise<AiResult> {
   return provider() === "gemini"
-    ? geminiJson(system, user, maxTokens, pdfBase64)
-    : groqJson(system, user, maxTokens);
+    ? geminiJson(system, user, maxTokens, pdfBase64, avoidModel)
+    : { data: await groqJson(system, user, maxTokens), model: aiModel() };
+}
+
+type GeminiFailure = {
+  model: string;
+  kind: "daily" | "no_quota" | "minute" | "busy" | "missing";
+  waitSeconds: number;
+  message: string;
+};
+
+// Models that recently failed, and until when to skip them. Kept per Worker
+// instance, so it only saves wasted calls; correctness doesn't depend on it.
+const skipUntil = new Map<string, { until: number; kind: GeminiFailure["kind"] }>();
+
+/** For tests. */
+export function resetGeminiModelState() {
+  skipUntil.clear();
 }
 
 async function geminiJson(
@@ -73,7 +116,8 @@ async function geminiJson(
   user: string,
   maxTokens: number,
   pdfBase64?: string,
-): Promise<unknown> {
+  avoidModel?: string,
+): Promise<AiResult> {
   const key = serverEnv("GEMINI_API_KEY");
   if (!key) throw new Error("GEMINI_API_KEY isn't set. Add it as a Worker secret in Cloudflare.");
   const base = serverEnv("GEMINI_BASE_URL") || "https://generativelanguage.googleapis.com/v1beta";
@@ -81,31 +125,60 @@ async function geminiJson(
   const parts: Record<string, unknown>[] = [];
   if (pdfBase64) parts.push({ inline_data: { mime_type: "application/pdf", data: pdfBase64 } });
   parts.push({ text: user });
-
-  const res = await fetch(`${base}/models/${encodeURIComponent(aiModel())}:generateContent`, {
-    method: "POST",
-    headers: { "x-goog-api-key": key, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: "user", parts }],
-      generationConfig: {
-        temperature: 0,
-        // Generous: newer models spend part of this budget thinking.
-        maxOutputTokens: Math.max(maxTokens * 4, 16_000),
-        responseMimeType: "application/json",
-      },
-    }),
+  const body = JSON.stringify({
+    systemInstruction: { parts: [{ text: system }] },
+    contents: [{ role: "user", parts }],
+    generationConfig: {
+      temperature: 0,
+      // Generous: newer models spend part of this budget thinking.
+      maxOutputTokens: Math.max(maxTokens * 4, 16_000),
+      responseMimeType: "application/json",
+    },
   });
 
-  if (res.status === 429 || res.status === 503) {
-    const body = (await res.json().catch(() => null)) as GeminiError | null;
-    throw geminiLimitError(res.status, body);
+  const models = geminiModels();
+  const ordered = [
+    ...models.filter((m) => m !== avoidModel),
+    ...models.filter((m) => m === avoidModel),
+  ];
+  const failures: GeminiFailure[] = [];
+
+  for (const model of ordered) {
+    if ((skipUntil.get(model)?.until ?? 0) > Date.now()) continue;
+    const res = await fetch(`${base}/models/${encodeURIComponent(model)}:generateContent`, {
+      method: "POST",
+      headers: { "x-goog-api-key": key, "Content-Type": "application/json" },
+      body,
+    });
+
+    if (res.status === 429 || res.status === 404 || res.status >= 500) {
+      const errorBody = (await res.json().catch(() => null)) as GeminiError | null;
+      const failure = classifyGeminiFailure(model, res.status, errorBody);
+      failures.push(failure);
+      const hours = failure.kind === "missing" ? 24 : 6;
+      skipUntil.set(model, {
+        kind: failure.kind,
+        until:
+          Date.now() +
+          (failure.kind === "minute" || failure.kind === "busy"
+            ? failure.waitSeconds * 1000
+            : hours * 3_600_000),
+      });
+      continue; // try the next model
+    }
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Gemini error ${res.status} (${model}): ${text.slice(0, 300)}`);
+    }
+    skipUntil.delete(model);
+    return { data: parseGeminiAnswer(await res.json()), model };
   }
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Gemini error ${res.status}: ${body.slice(0, 300)}`);
-  }
-  const data = (await res.json()) as {
+
+  throw allModelsFailedError(models, failures);
+}
+
+function parseGeminiAnswer(json: unknown): unknown {
+  const data = json as {
     candidates?: {
       content?: { parts?: { text?: string; thought?: boolean }[] };
       finishReason?: string;
@@ -117,7 +190,7 @@ async function geminiJson(
     .filter((p) => !p.thought && typeof p.text === "string")
     .map((p) => p.text)
     .join("");
-  if (!text) {
+  if (!text || candidate?.finishReason === "MAX_TOKENS") {
     const reason = data.promptFeedback?.blockReason ?? candidate?.finishReason ?? "no answer";
     throw new Error(
       reason === "MAX_TOKENS"
@@ -125,10 +198,6 @@ async function geminiJson(
         : `The AI didn't answer (${reason}). Try this section again, or use Paste text.`,
     );
   }
-  if (candidate?.finishReason === "MAX_TOKENS")
-    throw new Error(
-      "This section had too much for the AI to answer in one go. Import fewer pages at a time.",
-    );
   return parseJson(text);
 }
 
@@ -142,36 +211,65 @@ type GeminiError = {
   };
 };
 
-/**
- * Turns a Gemini 429/503 into either a wait-and-retry (per-minute limits, busy
- * servers) or a clear error that retrying won't fix (daily limit used up, or
- * no free quota for this model on this key).
- */
-export function geminiLimitError(status: number, body: GeminiError | null): Error {
-  const model = aiModel();
+/** Why a Gemini model couldn't answer, and whether waiting would help. */
+export function classifyGeminiFailure(
+  model: string,
+  status: number,
+  body: GeminiError | null,
+): GeminiFailure {
   const details = body?.error?.details ?? [];
-  const message = (body?.error?.message ?? "").split("\n")[0].slice(0, 200);
+  const fullMessage = body?.error?.message ?? "";
+  const message = fullMessage.split("\n")[0].slice(0, 200);
   const violations = details.flatMap((d) => d.violations ?? []);
   const delay = details.find((d) => d.retryDelay)?.retryDelay;
+  const waitSeconds = clampRetry(delay ? parseFloat(delay) : status === 429 ? 30 : 20);
 
+  if (status === 404) return { model, kind: "missing", waitSeconds: 0, message };
   if (status === 429) {
-    const noQuota =
-      violations.some((v) => v.quotaValue === "0") ||
-      /\blimit: 0\b/.test(body?.error?.message ?? "");
-    if (noQuota) {
-      return new Error(
-        `Your Gemini key has no free quota for ${model}. In Cloudflare, set GEMINI_MODEL to a model that's free for your key (e.g. gemini-2.5-flash), or turn on billing in Google AI Studio.`,
-      );
-    }
-    if (violations.some((v) => /PerDay/i.test(`${v.quotaId ?? ""} ${v.quotaMetric ?? ""}`))) {
-      return new Error(
-        `Gemini's free daily limit for ${model} is used up. It resets at midnight Pacific time (about 09:00 in South Africa): open this import then and use Retry. Or set GEMINI_MODEL in Cloudflare to another Gemini model, which has its own daily limit.`,
-      );
-    }
+    if (violations.some((v) => v.quotaValue === "0") || /\blimit: 0\b/.test(fullMessage))
+      return { model, kind: "no_quota", waitSeconds: 0, message };
+    if (violations.some((v) => /PerDay/i.test(`${v.quotaId ?? ""} ${v.quotaMetric ?? ""}`)))
+      return { model, kind: "daily", waitSeconds: 0, message };
+    return { model, kind: "minute", waitSeconds, message };
   }
-  return new RateLimitError(
-    clampRetry(delay ? parseFloat(delay) : status === 503 ? 20 : 30),
-    status === 503 ? "Gemini is busy right now" : message || "Gemini's per-minute limit",
+  return { model, kind: "busy", waitSeconds, message };
+}
+
+const FAILURE_LABEL: Record<GeminiFailure["kind"], string> = {
+  daily: "daily limit used up",
+  no_quota: "no free quota on this key",
+  minute: "per-minute limit",
+  busy: "busy",
+  missing: "not available",
+};
+
+/**
+ * Every model failed (or is being skipped). If any of them only needs a short
+ * wait, wait and retry; otherwise explain which models are out for the day.
+ */
+export function allModelsFailedError(models: string[], failures: GeminiFailure[]): Error {
+  const now = Date.now();
+  const status = models.map((model) => {
+    const failure = failures.find((f) => f.model === model);
+    if (failure) return failure;
+    const skipped = skipUntil.get(model);
+    return {
+      model,
+      kind: skipped?.kind ?? "busy",
+      waitSeconds: skipped ? Math.max(1, (skipped.until - now) / 1000) : 20,
+      message: "",
+    } satisfies GeminiFailure;
+  });
+  const waitable = status.filter((f) => f.kind === "minute" || f.kind === "busy");
+  if (waitable.length) {
+    return new RateLimitError(
+      clampRetry(Math.min(...waitable.map((f) => f.waitSeconds))),
+      `all ${models.length} Gemini models are at their limit right now`,
+    );
+  }
+  const list = status.map((f) => `${f.model} (${FAILURE_LABEL[f.kind]})`).join(", ");
+  return new Error(
+    `None of the Gemini models can take more requests today: ${list}. Free limits reset at midnight Pacific time (about 09:00 in South Africa): open this import then and use Retry. You can also add more models in Cloudflare with GEMINI_MODELS.`,
   );
 }
 
@@ -381,7 +479,7 @@ export async function extractDrafts(
     pdfBase64?: string;
     pages?: { from: number; to: number };
   },
-): Promise<(CourseDraft | BursaryDraft)[]> {
+): Promise<{ drafts: (CourseDraft | BursaryDraft)[]; model: string }> {
   const header =
     contentType === "courses"
       ? `University: ${context.universityName ?? "unknown"}. Extract every undergraduate programme in this section that has entry requirements.`
@@ -393,32 +491,43 @@ export async function extractDrafts(
   const user = withPdf
     ? `${header}\n${where}\n\nThe attached PDF is the document: read it carefully, including tables. Below is the text layer extracted from the same pages. For every "quote", copy the words EXACTLY as they appear in this text layer whenever they are there, so they can be checked automatically. If the text layer is empty or garbled (e.g. a scanned page), copy the words exactly as printed in the PDF.\n\n<text_layer>\n${chunk}\n</text_layer>`
     : `${header}\n${where}\n\n<document>\n${chunk}\n</document>`;
-  const raw = await chatJson(
+  const { data: raw, model } = await chatJson(
     contentType === "courses" ? COURSE_SYSTEM : BURSARY_SYSTEM,
     user,
     4000,
     withPdf ? context.pdfBase64 : undefined,
   );
   const items = asItems(raw);
-  return contentType === "courses" ? items.map(toCourse) : items.map(toBursary);
+  return {
+    drafts: contentType === "courses" ? items.map(toCourse) : items.map(toBursary),
+    model,
+  };
 }
 
 /** Second, independent pass: does each value match its own quote? */
 export async function verifyDrafts(
   drafts: (CourseDraft | BursaryDraft)[],
-): Promise<(VerifierVerdict | undefined)[]> {
-  if (!drafts.length) return [];
+  /** The model that extracted the drafts; a different one checks them when possible. */
+  extractedBy?: string,
+): Promise<{ verdicts: (VerifierVerdict | undefined)[]; model: string | null }> {
+  if (!drafts.length) return { verdicts: [], model: null };
   const records = drafts.map((d, index) => ({ index, ...d }));
-  const raw = (await chatJson(VERIFIER_SYSTEM, JSON.stringify({ records }), 2000)) as {
-    results?: unknown;
-  };
+  const { data, model } = await chatJson(
+    VERIFIER_SYSTEM,
+    JSON.stringify({ records }),
+    2000,
+    undefined,
+    extractedBy,
+  );
+  const raw = data as { results?: unknown };
   const results = Array.isArray(raw?.results) ? raw.results : [];
-  return drafts.map((_, index) => {
+  const verdicts = drafts.map((_, index) => {
     const r = results.find((x) => (x as { index?: unknown })?.index === index) as
       Record<string, unknown> | undefined;
     const verdict = r?.verdict;
     if (verdict !== "supported" && verdict !== "not_supported" && verdict !== "unsure")
       return undefined;
-    return { verdict, problems: strList(r?.problems).slice(0, 5) };
+    return { verdict, problems: strList(r?.problems).slice(0, 5) } as VerifierVerdict;
   });
+  return { verdicts, model };
 }
