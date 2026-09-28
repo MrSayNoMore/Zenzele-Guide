@@ -2,7 +2,6 @@
 // This file should NEVER be imported directly from client code.
 // Import from journey.functions.ts instead.
 
-import "server-only";
 import type { Database, Tables, Json } from "@/integrations/supabase/types";
 import type { ApsRuleSet, NsfasRuleSet, BursaryDefinition, TvetProgrammeDefinition } from "@/engine/schemas";
 

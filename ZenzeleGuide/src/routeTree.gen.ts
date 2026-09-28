@@ -35,6 +35,7 @@ import { Route as AdminSubjectsRouteImport } from './routes/admin.subjects'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminCoursesRouteImport } from './routes/admin.courses'
 import { Route as AdminBursariesRouteImport } from './routes/admin.bursaries'
+import { Route as AdminAiImportRouteImport } from './routes/admin.ai-import'
 
 const UniversitiesRoute = UniversitiesRouteImport.update({
   id: '/universities',
@@ -166,6 +167,11 @@ const AdminBursariesRoute = AdminBursariesRouteImport.update({
   path: '/bursaries',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAiImportRoute = AdminAiImportRouteImport.update({
+  id: '/ai-import',
+  path: '/ai-import',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -179,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/tvet-colleges': typeof TvetCollegesRoute
   '/universities': typeof UniversitiesRoute
+  '/admin/ai-import': typeof AdminAiImportRoute
   '/admin/bursaries': typeof AdminBursariesRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -206,6 +213,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/tvet-colleges': typeof TvetCollegesRoute
   '/universities': typeof UniversitiesRoute
+  '/admin/ai-import': typeof AdminAiImportRoute
   '/admin/bursaries': typeof AdminBursariesRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -235,6 +243,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/tvet-colleges': typeof TvetCollegesRoute
   '/universities': typeof UniversitiesRoute
+  '/admin/ai-import': typeof AdminAiImportRoute
   '/admin/bursaries': typeof AdminBursariesRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -265,6 +274,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/tvet-colleges'
     | '/universities'
+    | '/admin/ai-import'
     | '/admin/bursaries'
     | '/admin/courses'
     | '/admin/dashboard'
@@ -292,6 +302,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/tvet-colleges'
     | '/universities'
+    | '/admin/ai-import'
     | '/admin/bursaries'
     | '/admin/courses'
     | '/admin/dashboard'
@@ -320,6 +331,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/tvet-colleges'
     | '/universities'
+    | '/admin/ai-import'
     | '/admin/bursaries'
     | '/admin/courses'
     | '/admin/dashboard'
@@ -544,10 +556,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBursariesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/ai-import': {
+      id: '/admin/ai-import'
+      path: '/ai-import'
+      fullPath: '/admin/ai-import'
+      preLoaderRoute: typeof AdminAiImportRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
+  AdminAiImportRoute: typeof AdminAiImportRoute
   AdminBursariesRoute: typeof AdminBursariesRoute
   AdminCoursesRoute: typeof AdminCoursesRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
@@ -557,6 +577,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAiImportRoute: AdminAiImportRoute,
   AdminBursariesRoute: AdminBursariesRoute,
   AdminCoursesRoute: AdminCoursesRoute,
   AdminDashboardRoute: AdminDashboardRoute,

@@ -14,7 +14,10 @@ export default defineConfig(async ({ command }) => {
     tanstackStart({
       importProtection: {
         behavior: "error",
-        client: { files: ["**/server/**"], specifiers: ["server-only"] },
+        // *.server.ts files hold secrets and service-role code: the build fails if
+        // browser code imports one. (Don't use the "server-only" package: without
+        // the react-server condition it throws at runtime on the server too.)
+        client: { files: ["**/server/**", "**/*.server.ts"], specifiers: ["server-only"] },
       },
       // Route TanStack Start's server entry to src/server.ts (our SSR error wrapper).
       server: { entry: "server" },

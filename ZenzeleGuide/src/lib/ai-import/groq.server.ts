@@ -1,0 +1,236 @@
+// Server-only: calls Groq (OpenAI-compatible chat completions API).
+// Secrets: GROQ_API_KEY. Optional: GROQ_MODEL, GROQ_BASE_URL.
+import type { BursaryDraft, ContentType, CourseDraft, VerifierVerdict } from "./shared";
+
+const DEFAULT_MODEL = "llama-3.3-70b-versatile";
+
+export class RateLimitError extends Error {
+  constructor(public retryAfterSeconds: number) {
+    super(`RATE_LIMIT:${retryAfterSeconds}`);
+  }
+}
+
+export function groqModel(): string {
+  return process.env.GROQ_MODEL || DEFAULT_MODEL;
+}
+
+async function chatJson(system: string, user: string, maxTokens: number): Promise<unknown> {
+  const key = process.env.GROQ_API_KEY;
+  if (!key) throw new Error("GROQ_API_KEY isn't set. Add it as a Worker secret in Cloudflare.");
+  const base = process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1";
+
+  const res = await fetch(`${base}/chat/completions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: groqModel(),
+      temperature: 0,
+      max_tokens: maxTokens,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+    }),
+  });
+
+  if (res.status === 429) {
+    const retry = Number(res.headers.get("retry-after")) || 20;
+    throw new RateLimitError(Math.min(Math.max(Math.ceil(retry), 2), 120));
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Groq error ${res.status}: ${body.slice(0, 300)}`);
+  }
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  const content = data.choices?.[0]?.message?.content ?? "";
+  try {
+    return JSON.parse(content);
+  } catch {
+    throw new Error("The AI returned something that wasn't valid JSON. Try this section again.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Prompts
+// ---------------------------------------------------------------------------
+
+const RULES = `
+STRICT RULES — accuracy matters more than completeness. Learners make real decisions from this data.
+1. Use ONLY the document text you are given. Never use outside knowledge, memory, or "typical" values.
+2. For every value, give "quote": an EXACT excerpt copied character-for-character from the document that states the value. Keep quotes short (one line or sentence).
+3. If a value is not clearly stated in the document, set "value" to null and "quote" to null. Never guess, estimate, round, convert units, or fill gaps.
+4. If the document is ambiguous, contradicts itself, gives several values (e.g. different APS for different streams or years), or you are not sure, set "uncertain": true and explain briefly in "notes".
+5. Do not invent items. If the text contains none, return an empty list.
+6. Output JSON only, exactly in the requested shape.`;
+
+const COURSE_SYSTEM = `You extract South African university programme entry requirements from prospectus text.
+${RULES}
+
+Return: {"items": [COURSE, ...]} where COURSE is:
+{
+  "name": {"value": string|null, "quote": string|null},              // programme name exactly as written
+  "faculty": {"value": string|null, "quote": string|null},
+  "qualification_type": {"value": string|null, "quote": string|null}, // e.g. "Bachelor's degree", "Diploma", "Higher Certificate"
+  "duration_years": {"value": number|null, "quote": string|null},
+  "min_aps": {"value": number|null, "quote": string|null},           // minimum APS / admission point score
+  "field_of_study": one of "health","engineering","commerce","humanities","law","education","science","it","arts","agriculture" or null,
+  "requires_nbt": {"value": boolean|null, "quote": string|null},
+  "requirements": [                                                    // NSC subject minimums for this programme
+    {"subject": string, "min_level": number|null, "min_percentage": number|null, "quote": string|null}
+  ],
+  "uncertain": boolean,
+  "notes": string|null
+}
+For requirements: copy the subject name as written. Use "min_level" only if an NSC level (1-7) is written; use "min_percentage" only if a percentage is written. Never convert between them.`;
+
+const BURSARY_SYSTEM = `You extract South African bursary details from a web page or document.
+${RULES}
+
+Return: {"items": [BURSARY, ...]} (usually one) where BURSARY is:
+{
+  "name": {"value": string|null, "quote": string|null},
+  "provider": {"value": string|null, "quote": string|null},            // company or organisation offering it
+  "website_url": {"value": string|null, "quote": string|null},         // application link, only if written in the text
+  "value_description": {"value": string|null, "quote": string|null},  // what it covers
+  "fields": [ subset of "health","engineering","commerce","humanities","law","education","science","it","arts","agriculture" ] — only fields the text names,
+  "citizenship": [ subset of "sa_citizen","sa_permanent_resident" ] — only if the text restricts citizenship,
+  "provinces": [ subset of "EC","FS","GP","KZN","LP","MP","NC","NW","WC" ] — only if the text restricts provinces,
+  "min_percentage_avg": {"value": number|null, "quote": string|null},
+  "household_income_max": {"value": number|null, "quote": string|null}, // annual Rand amount, as a plain number
+  "disability_only": {"value": boolean|null, "quote": string|null},
+  "opens_at": {"value": "YYYY-MM-DD"|null, "quote": string|null},
+  "closes_at": {"value": "YYYY-MM-DD"|null, "quote": string|null},
+  "cycle_year": {"value": number|null, "quote": string|null},           // the study year the bursary is for
+  "uncertain": boolean,
+  "notes": string|null
+}
+Only give a date if the full day, month and year are written or the year is unambiguous from the same sentence.`;
+
+const VERIFIER_SYSTEM = `You are a strict fact-checker. You receive extracted records. Each value comes with the quote it was supposedly taken from.
+For each record, check EVERY value against ITS OWN quote only:
+- "supported": every value is stated by its quote exactly (no rounding, no inference, correct field).
+- "not_supported": at least one value is contradicted by, or not stated in, its quote.
+- "unsure": the quotes are too short, ambiguous, or could refer to something else.
+Do not use outside knowledge. Be sceptical: when in doubt, answer "unsure".
+Return JSON: {"results": [{"index": number, "verdict": "supported"|"not_supported"|"unsure", "problems": [string]}]} with one result per record, in order.`;
+
+// ---------------------------------------------------------------------------
+// Coercion: AI output is untrusted; reshape it defensively.
+// ---------------------------------------------------------------------------
+
+const str = (v: unknown): string | null =>
+  typeof v === "string" && v.trim() ? v.trim().slice(0, 500) : null;
+const num = (v: unknown): number | null => {
+  const n = typeof v === "string" ? Number(v.replace(/[^\d.]/g, "")) : v;
+  return typeof n === "number" && Number.isFinite(n) ? n : null;
+};
+const bool = (v: unknown): boolean | null => (typeof v === "boolean" ? v : null);
+const strList = (v: unknown): string[] =>
+  Array.isArray(v)
+    ? v
+        .filter((x): x is string => typeof x === "string")
+        .map((s) => s.trim())
+        .slice(0, 20)
+    : [];
+
+function quoted<T>(raw: unknown, conv: (v: unknown) => T | null) {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const value = conv(o.value);
+  return { value, quote: value === null ? null : str(o.quote) };
+}
+
+function asItems(raw: unknown): Record<string, unknown>[] {
+  const items = (raw as { items?: unknown })?.items;
+  return Array.isArray(items)
+    ? items.filter((i): i is Record<string, unknown> => !!i && typeof i === "object").slice(0, 60)
+    : [];
+}
+
+function toCourse(i: Record<string, unknown>): CourseDraft {
+  const reqs = Array.isArray(i.requirements) ? i.requirements : [];
+  return {
+    name: quoted(i.name, str),
+    faculty: quoted(i.faculty, str),
+    qualification_type: quoted(i.qualification_type, str),
+    duration_years: quoted(i.duration_years, num),
+    min_aps: quoted(i.min_aps, num),
+    field_of_study: str(i.field_of_study),
+    requires_nbt: quoted(i.requires_nbt, bool),
+    requirements: reqs
+      .filter((r): r is Record<string, unknown> => !!r && typeof r === "object")
+      .slice(0, 15)
+      .map((r) => ({
+        subject: str(r.subject) ?? "",
+        min_level: num(r.min_level),
+        min_percentage: num(r.min_percentage),
+        quote: str(r.quote),
+      }))
+      .filter((r) => r.subject),
+    uncertain: i.uncertain === true,
+    notes: str(i.notes),
+  };
+}
+
+function toBursary(i: Record<string, unknown>): BursaryDraft {
+  return {
+    name: quoted(i.name, str),
+    provider: quoted(i.provider, str),
+    website_url: quoted(i.website_url, str),
+    value_description: quoted(i.value_description, str),
+    fields: strList(i.fields),
+    citizenship: strList(i.citizenship),
+    provinces: strList(i.provinces).map((p) => p.toUpperCase()),
+    min_percentage_avg: quoted(i.min_percentage_avg, num),
+    household_income_max: quoted(i.household_income_max, num),
+    disability_only: quoted(i.disability_only, bool),
+    opens_at: quoted(i.opens_at, str),
+    closes_at: quoted(i.closes_at, str),
+    cycle_year: quoted(i.cycle_year, num),
+    uncertain: i.uncertain === true,
+    notes: str(i.notes),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+export async function extractDrafts(
+  contentType: ContentType,
+  chunk: string,
+  context: { universityName?: string; chunkNumber: number; chunkCount: number },
+): Promise<(CourseDraft | BursaryDraft)[]> {
+  const header =
+    contentType === "courses"
+      ? `University: ${context.universityName ?? "unknown"}. Extract every undergraduate programme in this section that has entry requirements.`
+      : "Extract the bursary (or bursaries) described in this text.";
+  const user = `${header}\nThis is section ${context.chunkNumber} of ${context.chunkCount}; programmes may be cut off at the edges — skip any you can't see fully.\n\n<document>\n${chunk}\n</document>`;
+  const raw = await chatJson(
+    contentType === "courses" ? COURSE_SYSTEM : BURSARY_SYSTEM,
+    user,
+    4000,
+  );
+  const items = asItems(raw);
+  return contentType === "courses" ? items.map(toCourse) : items.map(toBursary);
+}
+
+/** Second, independent pass: does each value match its own quote? */
+export async function verifyDrafts(
+  drafts: (CourseDraft | BursaryDraft)[],
+): Promise<(VerifierVerdict | undefined)[]> {
+  if (!drafts.length) return [];
+  const records = drafts.map((d, index) => ({ index, ...d }));
+  const raw = (await chatJson(VERIFIER_SYSTEM, JSON.stringify({ records }), 2000)) as {
+    results?: unknown;
+  };
+  const results = Array.isArray(raw?.results) ? raw.results : [];
+  return drafts.map((_, index) => {
+    const r = results.find((x) => (x as { index?: unknown })?.index === index) as
+      Record<string, unknown> | undefined;
+    const verdict = r?.verdict;
+    if (verdict !== "supported" && verdict !== "not_supported" && verdict !== "unsure")
+      return undefined;
+    return { verdict, problems: strList(r?.problems).slice(0, 5) };
+  });
+}

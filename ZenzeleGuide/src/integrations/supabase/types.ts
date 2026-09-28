@@ -411,6 +411,8 @@ export type Database = {
           state: Database["public"]["Enums"]["draft_state"]
           target_table: string
           upload_id: string
+          checks: Json
+          chunk_index: number | null
         }
         Insert: {
           confidence?: number | null
@@ -424,6 +426,8 @@ export type Database = {
           state?: Database["public"]["Enums"]["draft_state"]
           target_table: string
           upload_id: string
+          checks?: Json
+          chunk_index?: number | null
         }
         Update: {
           confidence?: number | null
@@ -437,6 +441,8 @@ export type Database = {
           state?: Database["public"]["Enums"]["draft_state"]
           target_table?: string
           upload_id?: string
+          checks?: Json
+          chunk_index?: number | null
         }
         Relationships: [
           {
@@ -584,10 +590,18 @@ export type Database = {
           id: string
           intake_year: number | null
           status: string
-          storage_path: string
+          storage_path: string | null
           university_id: string | null
           updated_at: string
           uploaded_by: string | null
+          content_type: string
+          source_kind: string
+          source_url: string | null
+          source_text: string | null
+          page_range: string | null
+          ai_model: string | null
+          chunks_total: number | null
+          chunks_done: number
         }
         Insert: {
           created_at?: string
@@ -596,10 +610,18 @@ export type Database = {
           id?: string
           intake_year?: number | null
           status?: string
-          storage_path: string
+          storage_path?: string | null
           university_id?: string | null
           updated_at?: string
           uploaded_by?: string | null
+          content_type?: string
+          source_kind?: string
+          source_url?: string | null
+          source_text?: string | null
+          page_range?: string | null
+          ai_model?: string | null
+          chunks_total?: number | null
+          chunks_done?: number
         }
         Update: {
           created_at?: string
@@ -608,10 +630,18 @@ export type Database = {
           id?: string
           intake_year?: number | null
           status?: string
-          storage_path?: string
+          storage_path?: string | null
           university_id?: string | null
           updated_at?: string
           uploaded_by?: string | null
+          content_type?: string
+          source_kind?: string
+          source_url?: string | null
+          source_text?: string | null
+          page_range?: string | null
+          ai_model?: string | null
+          chunks_total?: number | null
+          chunks_done?: number
         }
         Relationships: [
           {
