@@ -26,7 +26,16 @@ export default defineConfig(async ({ command }) => {
 
   if (command === "build") {
     const { nitro } = await import("nitro/vite");
-    plugins.push(nitro({ defaultPreset: "cloudflare-module" }));
+    plugins.push(
+      nitro({
+        defaultPreset: "cloudflare-module",
+        // Keep the text variables set in the Cloudflare dashboard (e.g.
+        // SUPABASE_URL). Without this, every `wrangler deploy` removes them
+        // because the generated wrangler.json lists no vars. Secrets are kept
+        // either way.
+        cloudflare: { wrangler: { name: "zenzele-guide", keep_vars: true } },
+      }),
+    );
   }
 
   plugins.push(viteReact());

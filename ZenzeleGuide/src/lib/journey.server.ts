@@ -522,7 +522,9 @@ async function checkSessionToken(): Promise<{ userId: string } | { problem?: str
     const message = err instanceof Error ? err.message : String(err);
     return {
       problem: /Missing Supabase environment/.test(message)
-        ? "The server can't check sign-ins: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY isn't set for the Worker in Cloudflare."
+        ? `The server can't check sign-ins: ${
+            /variable\(s\): ([A-Z_, ]+)/.exec(message)?.[1] ?? "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY"
+          } isn't set for the Worker in Cloudflare.`
         : `Couldn't check your sign-in (${message}). Try again.`,
     };
   }

@@ -5,12 +5,17 @@
 // AI_PROVIDER ("gemini" | "groq") picks one; otherwise Gemini is used when its
 // key is set.
 import type { BursaryDraft, ContentType, CourseDraft, VerifierVerdict } from "./shared";
+import { serverEnv } from "@/lib/server-env";
 
 const GEMINI_DEFAULT_MODEL = "gemini-flash-latest";
 const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
 
+/** A short-term limit (per minute, or the AI is busy): wait and try again. */
 export class RateLimitError extends Error {
-  constructor(public retryAfterSeconds: number) {
+  constructor(
+    public retryAfterSeconds: number,
+    public reason = "",
+  ) {
     super(`RATE_LIMIT:${retryAfterSeconds}`);
   }
 }
@@ -18,9 +23,9 @@ export class RateLimitError extends Error {
 type Provider = "gemini" | "groq";
 
 function provider(): Provider {
-  const chosen = process.env.AI_PROVIDER?.trim().toLowerCase();
+  const chosen = serverEnv("AI_PROVIDER")?.trim().toLowerCase();
   if (chosen === "gemini" || chosen === "groq") return chosen;
-  return process.env.GEMINI_API_KEY || !process.env.GROQ_API_KEY ? "gemini" : "groq";
+  return serverEnv("GEMINI_API_KEY") || !serverEnv("GROQ_API_KEY") ? "gemini" : "groq";
 }
 
 export function aiInfo() {
@@ -29,14 +34,14 @@ export function aiInfo() {
     provider: p,
     model: aiModel(),
     readsPdf: p === "gemini",
-    configured: Boolean(p === "gemini" ? process.env.GEMINI_API_KEY : process.env.GROQ_API_KEY),
+    configured: Boolean(p === "gemini" ? serverEnv("GEMINI_API_KEY") : serverEnv("GROQ_API_KEY")),
   };
 }
 
 export function aiModel(): string {
   return provider() === "gemini"
-    ? process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL
-    : process.env.GROQ_MODEL || GROQ_DEFAULT_MODEL;
+    ? serverEnv("GEMINI_MODEL") || GEMINI_DEFAULT_MODEL
+    : serverEnv("GROQ_MODEL") || GROQ_DEFAULT_MODEL;
 }
 
 const clampRetry = (seconds: number) => Math.min(Math.max(Math.ceil(seconds), 2), 120);
@@ -69,9 +74,9 @@ async function geminiJson(
   maxTokens: number,
   pdfBase64?: string,
 ): Promise<unknown> {
-  const key = process.env.GEMINI_API_KEY;
+  const key = serverEnv("GEMINI_API_KEY");
   if (!key) throw new Error("GEMINI_API_KEY isn't set. Add it as a Worker secret in Cloudflare.");
-  const base = process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com/v1beta";
+  const base = serverEnv("GEMINI_BASE_URL") || "https://generativelanguage.googleapis.com/v1beta";
 
   const parts: Record<string, unknown>[] = [];
   if (pdfBase64) parts.push({ inline_data: { mime_type: "application/pdf", data: pdfBase64 } });
@@ -93,11 +98,8 @@ async function geminiJson(
   });
 
   if (res.status === 429 || res.status === 503) {
-    const body = (await res.json().catch(() => null)) as {
-      error?: { details?: { retryDelay?: string }[] };
-    } | null;
-    const delay = body?.error?.details?.find((d) => d.retryDelay)?.retryDelay;
-    throw new RateLimitError(clampRetry(delay ? parseFloat(delay) : 30));
+    const body = (await res.json().catch(() => null)) as GeminiError | null;
+    throw geminiLimitError(res.status, body);
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -130,10 +132,53 @@ async function geminiJson(
   return parseJson(text);
 }
 
+type GeminiError = {
+  error?: {
+    message?: string;
+    details?: {
+      retryDelay?: string;
+      violations?: { quotaId?: string; quotaMetric?: string; quotaValue?: string }[];
+    }[];
+  };
+};
+
+/**
+ * Turns a Gemini 429/503 into either a wait-and-retry (per-minute limits, busy
+ * servers) or a clear error that retrying won't fix (daily limit used up, or
+ * no free quota for this model on this key).
+ */
+export function geminiLimitError(status: number, body: GeminiError | null): Error {
+  const model = aiModel();
+  const details = body?.error?.details ?? [];
+  const message = (body?.error?.message ?? "").split("\n")[0].slice(0, 200);
+  const violations = details.flatMap((d) => d.violations ?? []);
+  const delay = details.find((d) => d.retryDelay)?.retryDelay;
+
+  if (status === 429) {
+    const noQuota =
+      violations.some((v) => v.quotaValue === "0") ||
+      /\blimit: 0\b/.test(body?.error?.message ?? "");
+    if (noQuota) {
+      return new Error(
+        `Your Gemini key has no free quota for ${model}. In Cloudflare, set GEMINI_MODEL to a model that's free for your key (e.g. gemini-2.5-flash), or turn on billing in Google AI Studio.`,
+      );
+    }
+    if (violations.some((v) => /PerDay/i.test(`${v.quotaId ?? ""} ${v.quotaMetric ?? ""}`))) {
+      return new Error(
+        `Gemini's free daily limit for ${model} is used up. It resets at midnight Pacific time (about 09:00 in South Africa): open this import then and use Retry. Or set GEMINI_MODEL in Cloudflare to another Gemini model, which has its own daily limit.`,
+      );
+    }
+  }
+  return new RateLimitError(
+    clampRetry(delay ? parseFloat(delay) : status === 503 ? 20 : 30),
+    status === 503 ? "Gemini is busy right now" : message || "Gemini's per-minute limit",
+  );
+}
+
 async function groqJson(system: string, user: string, maxTokens: number): Promise<unknown> {
-  const key = process.env.GROQ_API_KEY;
+  const key = serverEnv("GROQ_API_KEY");
   if (!key) throw new Error("GROQ_API_KEY isn't set. Add it as a Worker secret in Cloudflare.");
-  const base = process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1";
+  const base = serverEnv("GROQ_BASE_URL") || "https://api.groq.com/openai/v1";
 
   const res = await fetch(`${base}/chat/completions`, {
     method: "POST",

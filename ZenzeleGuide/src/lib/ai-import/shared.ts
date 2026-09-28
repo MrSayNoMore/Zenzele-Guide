@@ -128,9 +128,26 @@ export function textOfPages(source: string, from: number, to: number): string {
     .trim();
 }
 
-/** True when the pages have (almost) no text layer, i.e. they're scanned images. */
-export function looksScanned(pageText: string): boolean {
-  return pageText.replace(/--- Page \d+ ---/g, "").replace(/\s+/g, "").length < 80;
+// A page with fewer visible characters than this has no real text layer (a
+// scanned image, maybe with a page number or scanner watermark).
+const SCANNED_PAGE_MAX_CHARS = 40;
+
+/** Pages (from extractPdfText output) with (almost) no text layer, i.e. scanned images. */
+export function scannedPages(pagesText: string): number[] {
+  return pagesText
+    .split(/(?=^--- Page \d+ ---$)/m)
+    .map((part) => ({
+      page: Number(/^--- Page (\d+) ---$/m.exec(part)?.[1]),
+      chars: part.replace(/--- Page \d+ ---/g, "").replace(/\s+/g, "").length,
+    }))
+    .filter((p) => Number.isInteger(p.page) && p.page > 0 && p.chars < SCANNED_PAGE_MAX_CHARS)
+    .map((p) => p.page);
+}
+
+/** "6", "6 and 7", "3, 6 and 7" */
+export function listPages(pages: number[]): string {
+  if (pages.length <= 1) return pages.join("");
+  return `${pages.slice(0, -1).join(", ")} and ${pages[pages.length - 1]}`;
 }
 
 // ---------------------------------------------------------------------------

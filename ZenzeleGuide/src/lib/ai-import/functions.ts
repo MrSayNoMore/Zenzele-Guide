@@ -107,14 +107,16 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
       parsePageRange,
       pageChunks,
       textOfPages,
-      looksScanned,
+      scannedPages,
+      listPages,
     } = await import("./shared");
-    const { extractDrafts, verifyDrafts, aiModel, RateLimitError } = await import("./ai.server");
+    const { extractDrafts, verifyDrafts, aiModel, aiInfo, RateLimitError } =
+      await import("./ai.server");
 
     const { data: upload, error } = await db
       .from("prospectus_uploads")
       .select(
-        "id, content_type, source_text, page_range, chunk_pages, university_id, universities(name)",
+        "id, content_type, source_text, page_range, chunk_pages, chunks_done, error_message, university_id, universities(name)",
       )
       .eq("id", data.uploadId)
       .single();
@@ -131,11 +133,42 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
     const sectionText = pages
       ? textOfPages(upload.source_text, pages.from, pages.to)
       : chunkText(upload.source_text)[data.chunkIndex];
-    const scanned = Boolean(pages) && looksScanned(sectionText);
-    if (scanned && !data.pdfBase64) {
-      throw new Error(
-        `Pages ${pages!.from}-${pages!.to} are scanned images with no text. Start a new import with the PDF so the AI can read them.`,
+    // Scanned pages have no text: the AI can only read them from the PDF, and
+    // quotes from them can't be checked against the text.
+    const scanned = pages ? scannedPages(sectionText) : [];
+    const aiSeesPdf = Boolean(data.pdfBase64) && aiInfo().readsPdf;
+    const scannedLabel = `${scanned.length === 1 ? "Page" : "Pages"} ${listPages(scanned)}`;
+    // Notices that stay on the import (pages that couldn't be read), one per
+    // section and replaced when the section is read again. Other stored
+    // messages are errors that a successful section clears.
+    const sectionTag = `Not read (section ${data.chunkIndex + 1}): `;
+    const notices = new Set(
+      (upload.error_message ?? "")
+        .split("\n")
+        .filter((line) => line.startsWith("Not read (") && !line.startsWith(sectionTag)),
+    );
+    if (scanned.length && !aiSeesPdf) {
+      notices.add(
+        `${sectionTag}${scannedLabel} ${scanned.length === 1 ? "is a scanned image" : "are scanned images"} and the PDF wasn't sent to the AI. Choose the same PDF below so the AI can read ${scanned.length === 1 ? "it" : "them"}.`,
       );
+    }
+    const finishSection = async () => {
+      // Sections normally run in order; re-reading an earlier one (e.g. skipped
+      // scanned pages) mustn't make a finished import look unfinished.
+      const done = Math.max(upload.chunks_done ?? 0, data.chunkIndex + 1);
+      await db
+        .from("prospectus_uploads")
+        .update({
+          chunks_done: done,
+          status: done >= chunkCount ? "extracted" : "extracting",
+          error_message: notices.size ? [...notices].join("\n").slice(0, 2000) : null,
+        })
+        .eq("id", upload.id);
+    };
+    if (pages && !aiSeesPdf && scanned.length === pages.to - pages.from + 1) {
+      // Nothing readable in this section: record why and move on.
+      await finishSection();
+      return { rateLimitedFor: 0, created: 0, passed: 0, attention: 0 };
     }
     const contentType = upload.content_type as "courses" | "bursaries";
     const universityName = (upload.universities as { name: string } | null)?.name;
@@ -159,8 +192,8 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
       .update({ status: "extracting", ai_model: aiModel() })
       .eq("id", upload.id);
 
-    let drafts;
-    let verdicts;
+    let drafts: Awaited<ReturnType<typeof extractDrafts>>;
+    let verdicts: Awaited<ReturnType<typeof verifyDrafts>>;
     try {
       drafts = await extractDrafts(contentType, sectionText, {
         universityName,
@@ -172,16 +205,32 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
       try {
         verdicts = await verifyDrafts(drafts);
       } catch (e) {
-        if (e instanceof RateLimitError) throw e;
-        verdicts = drafts.map(() => undefined); // checked as "double-check didn't run"
+        // Don't redo the extraction just because the double-check hit a
+        // short limit: wait once, then fall back to "double-check didn't run"
+        // (which sends every draft to a human).
+        if (e instanceof RateLimitError && e.retryAfterSeconds <= 30) {
+          await new Promise((r) => setTimeout(r, e.retryAfterSeconds * 1000));
+          verdicts = await verifyDrafts(drafts).catch(() => drafts.map(() => undefined));
+        } else {
+          verdicts = drafts.map(() => undefined);
+        }
       }
     } catch (e) {
       if (e instanceof RateLimitError)
-        return { rateLimitedFor: e.retryAfterSeconds, created: 0, passed: 0, attention: 0 };
+        return {
+          rateLimitedFor: e.retryAfterSeconds,
+          rateLimitReason: e.reason,
+          created: 0,
+          passed: 0,
+          attention: 0,
+        };
       const message = e instanceof Error ? e.message : "AI request failed";
       await db
         .from("prospectus_uploads")
-        .update({ status: "failed", error_message: message.slice(0, 500) })
+        .update({
+          status: "failed",
+          error_message: [...notices, message.slice(0, 500)].join("\n").slice(0, 2000),
+        })
         .eq("id", upload.id);
       throw new Error(message);
     }
@@ -219,12 +268,14 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
           ? checkCourseDraft(d as never, upload.source_text, subjects ?? [], existingNames)
           : checkBursaryDraft(d as never, upload.source_text, existingNames);
       const checks = withVerifier(base, verdicts[i]);
-      if (scanned) {
+      if (scanned.length) {
         checks.status = "attention";
         checks.issues.unshift({
           field: "notes",
           severity: "high",
-          message: `Pages ${pages!.from}-${pages!.to} are scanned images, so the quotes couldn't be checked automatically. Check every value against the PDF yourself.`,
+          message: aiSeesPdf
+            ? `${scannedLabel} in this section ${scanned.length === 1 ? "is a scanned image" : "are scanned images"}, so quotes from ${scanned.length === 1 ? "it" : "them"} couldn't be checked automatically. Check every value against the PDF yourself.`
+            : `${scannedLabel} in this section ${scanned.length === 1 ? "is a scanned image" : "are scanned images"} the AI couldn't read. Check the PDF for anything missing from this draft.`,
         });
       }
       rows.push({
@@ -247,15 +298,7 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
       if (insertError) throw new Error(insertError.message);
     }
 
-    const done = data.chunkIndex + 1;
-    await db
-      .from("prospectus_uploads")
-      .update({
-        chunks_done: done,
-        status: done >= chunkCount ? "extracted" : "extracting",
-        error_message: null,
-      })
-      .eq("id", upload.id);
+    await finishSection();
 
     return {
       rateLimitedFor: 0,
