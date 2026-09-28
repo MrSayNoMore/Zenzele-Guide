@@ -10,8 +10,12 @@ import { serverEnv } from "@/lib/server-env";
 const GEMINI_DEFAULT_MODEL = "gemini-flash-latest";
 const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
 
+/** A short-term limit (per minute, or the AI is busy): wait and try again. */
 export class RateLimitError extends Error {
-  constructor(public retryAfterSeconds: number) {
+  constructor(
+    public retryAfterSeconds: number,
+    public reason = "",
+  ) {
     super(`RATE_LIMIT:${retryAfterSeconds}`);
   }
 }
@@ -94,11 +98,8 @@ async function geminiJson(
   });
 
   if (res.status === 429 || res.status === 503) {
-    const body = (await res.json().catch(() => null)) as {
-      error?: { details?: { retryDelay?: string }[] };
-    } | null;
-    const delay = body?.error?.details?.find((d) => d.retryDelay)?.retryDelay;
-    throw new RateLimitError(clampRetry(delay ? parseFloat(delay) : 30));
+    const body = (await res.json().catch(() => null)) as GeminiError | null;
+    throw geminiLimitError(res.status, body);
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -129,6 +130,49 @@ async function geminiJson(
       "This section had too much for the AI to answer in one go. Import fewer pages at a time.",
     );
   return parseJson(text);
+}
+
+type GeminiError = {
+  error?: {
+    message?: string;
+    details?: {
+      retryDelay?: string;
+      violations?: { quotaId?: string; quotaMetric?: string; quotaValue?: string }[];
+    }[];
+  };
+};
+
+/**
+ * Turns a Gemini 429/503 into either a wait-and-retry (per-minute limits, busy
+ * servers) or a clear error that retrying won't fix (daily limit used up, or
+ * no free quota for this model on this key).
+ */
+export function geminiLimitError(status: number, body: GeminiError | null): Error {
+  const model = aiModel();
+  const details = body?.error?.details ?? [];
+  const message = (body?.error?.message ?? "").split("\n")[0].slice(0, 200);
+  const violations = details.flatMap((d) => d.violations ?? []);
+  const delay = details.find((d) => d.retryDelay)?.retryDelay;
+
+  if (status === 429) {
+    const noQuota =
+      violations.some((v) => v.quotaValue === "0") ||
+      /\blimit: 0\b/.test(body?.error?.message ?? "");
+    if (noQuota) {
+      return new Error(
+        `Your Gemini key has no free quota for ${model}. In Cloudflare, set GEMINI_MODEL to a model that's free for your key (e.g. gemini-2.5-flash), or turn on billing in Google AI Studio.`,
+      );
+    }
+    if (violations.some((v) => /PerDay/i.test(`${v.quotaId ?? ""} ${v.quotaMetric ?? ""}`))) {
+      return new Error(
+        `Gemini's free daily limit for ${model} is used up. It resets at midnight Pacific time (about 09:00 in South Africa): open this import then and use Retry. Or set GEMINI_MODEL in Cloudflare to another Gemini model, which has its own daily limit.`,
+      );
+    }
+  }
+  return new RateLimitError(
+    clampRetry(delay ? parseFloat(delay) : status === 503 ? 20 : 30),
+    status === 503 ? "Gemini is busy right now" : message || "Gemini's per-minute limit",
+  );
 }
 
 async function groqJson(system: string, user: string, maxTokens: number): Promise<unknown> {

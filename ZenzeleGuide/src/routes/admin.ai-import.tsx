@@ -49,6 +49,9 @@ type ContentType = "courses" | "bursaries";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+const stillLimited = (res: { rateLimitReason?: string }) =>
+  `The AI is still limiting requests${res.rateLimitReason ? ` (${res.rateLimitReason})` : ""}. Wait a few minutes, then open this import and use Retry.`;
+
 function AiImportPage() {
   const { upload } = Route.useSearch();
   return (
@@ -250,6 +253,7 @@ function NewImport() {
             created += res.created;
             break;
           }
+          if (attempt === 5) throw new Error(stillLimited(res));
           for (let s = res.rateLimitedFor; s > 0; s--) {
             setProgress({
               label: "AI is reading and checking",
@@ -259,8 +263,6 @@ function NewImport() {
             });
             await sleep(1000);
           }
-          if (attempt === 5)
-            throw new Error("The free AI limit is busy. Open this import later and use Retry.");
         }
       }
       return { id: row.id, created };
@@ -474,7 +476,7 @@ function NewImport() {
             </div>
             {progress.waiting ? (
               <p className="text-xs text-muted-foreground">
-                Free AI limit reached: continuing in {progress.waiting}s…
+                The AI asked us to slow down (free-tier limit): continuing in {progress.waiting}s…
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">
@@ -659,6 +661,7 @@ function Review({ uploadId }: { uploadId: string }) {
         for (let attempt = 0; attempt < 6; attempt++) {
           const res = await aiExtractChunk({ data: { uploadId, chunkIndex: i, pdfBase64 } });
           if (!res.rateLimitedFor) break;
+          if (attempt === 5) throw new Error(stillLimited(res));
           await sleep(res.rateLimitedFor * 1000);
         }
         await queryClient.invalidateQueries({ queryKey: ["admin"] });

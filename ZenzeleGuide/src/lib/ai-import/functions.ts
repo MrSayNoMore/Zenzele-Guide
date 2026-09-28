@@ -192,8 +192,8 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
       .update({ status: "extracting", ai_model: aiModel() })
       .eq("id", upload.id);
 
-    let drafts;
-    let verdicts;
+    let drafts: Awaited<ReturnType<typeof extractDrafts>>;
+    let verdicts: Awaited<ReturnType<typeof verifyDrafts>>;
     try {
       drafts = await extractDrafts(contentType, sectionText, {
         universityName,
@@ -205,12 +205,25 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
       try {
         verdicts = await verifyDrafts(drafts);
       } catch (e) {
-        if (e instanceof RateLimitError) throw e;
-        verdicts = drafts.map(() => undefined); // checked as "double-check didn't run"
+        // Don't redo the extraction just because the double-check hit a
+        // short limit: wait once, then fall back to "double-check didn't run"
+        // (which sends every draft to a human).
+        if (e instanceof RateLimitError && e.retryAfterSeconds <= 30) {
+          await new Promise((r) => setTimeout(r, e.retryAfterSeconds * 1000));
+          verdicts = await verifyDrafts(drafts).catch(() => drafts.map(() => undefined));
+        } else {
+          verdicts = drafts.map(() => undefined);
+        }
       }
     } catch (e) {
       if (e instanceof RateLimitError)
-        return { rateLimitedFor: e.retryAfterSeconds, created: 0, passed: 0, attention: 0 };
+        return {
+          rateLimitedFor: e.retryAfterSeconds,
+          rateLimitReason: e.reason,
+          created: 0,
+          passed: 0,
+          attention: 0,
+        };
       const message = e instanceof Error ? e.message : "AI request failed";
       await db
         .from("prospectus_uploads")
