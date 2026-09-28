@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CAREER_STAGES } from "@/lib/career";
 import { Loader as Loader2, Mail, Lock, User, ArrowLeft } from "lucide-react";
 
 /** Only allow same-site paths, so the redirect can't send people elsewhere. */
@@ -31,6 +32,9 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [careerStage, setCareerStage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -46,6 +50,22 @@ function AuthPage() {
     }
   }, [navigate, redirect]);
 
+  const handleForgotPassword = async () => {
+    setError(null);
+    setMessage(null);
+    if (!email.trim()) {
+      setError("Enter your email above, then tap “Forgot password?” again.");
+      return;
+    }
+    setLoading(true);
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/auth/update-password`,
+    });
+    setLoading(false);
+    if (resetError) setError(resetError.message);
+    else setMessage("If that email has an account, we've sent a link to reset your password.");
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -54,6 +74,16 @@ function AuthPage() {
 
     try {
       if (isSignUp) {
+        if (!firstName.trim() || !lastName.trim()) {
+          setError("Please enter your name and surname");
+          setLoading(false);
+          return;
+        }
+        if (!careerStage) {
+          setError("Please tell us where you are right now");
+          setLoading(false);
+          return;
+        }
         if (password !== confirmPassword) {
           setError("Passwords do not match");
           setLoading(false);
@@ -69,6 +99,14 @@ function AuthPage() {
           email,
           password,
           options: {
+            // Stored as user metadata; the database copies it into profiles,
+            // and the email templates greet people by first name.
+            data: {
+              first_name: firstName.trim(),
+              last_name: lastName.trim(),
+              full_name: `${firstName.trim()} ${lastName.trim()}`,
+              career_stage: careerStage,
+            },
             emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`,
           },
         });
@@ -136,6 +174,60 @@ function AuthPage() {
                 </Alert>
               )}
 
+              {isSignUp && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">Name</Label>
+                      <Input
+                        id="firstName"
+                        autoComplete="given-name"
+                        placeholder="e.g. Thandi"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        maxLength={60}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Surname</Label>
+                      <Input
+                        id="lastName"
+                        autoComplete="family-name"
+                        placeholder="e.g. Nkosi"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        maxLength={60}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="careerStage">Where are you right now?</Label>
+                    <select
+                      id="careerStage"
+                      value={careerStage}
+                      onChange={(e) => setCareerStage(e.target.value)}
+                      required
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="" disabled>
+                        Choose your stage
+                      </option>
+                      {CAREER_STAGES.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-muted-foreground">
+                      Helps us show guidance that fits where you are.
+                    </p>
+                  </div>
+                </>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
@@ -167,6 +259,17 @@ function AuthPage() {
                   />
                 </div>
               </div>
+              {!isSignUp && (
+                <div className="-mt-2 text-right">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-sm text-primary hover:text-primary/80"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
 
               {isSignUp && (
                 <div className="space-y-2">

@@ -26,7 +26,9 @@ import { Route as JourneyNsfasRouteImport } from './routes/journey.nsfas'
 import { Route as JourneyGrade12RouteImport } from './routes/journey.grade-12'
 import { Route as JourneyBursaryRouteImport } from './routes/journey.bursary'
 import { Route as JourneySlugRouteImport } from './routes/journey.$slug'
-import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AuthUpdatePasswordRouteImport } from './routes/auth_.update-password'
+import { Route as AuthConfirmRouteImport } from './routes/auth_.confirm'
+import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 
 const UniversitiesRoute = UniversitiesRouteImport.update({
@@ -114,10 +116,20 @@ const JourneySlugRoute = JourneySlugRouteImport.update({
   path: '/journey/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthUpdatePasswordRoute = AuthUpdatePasswordRouteImport.update({
+  id: '/auth_/update-password',
+  path: '/auth/update-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthConfirmRoute = AuthConfirmRouteImport.update({
+  id: '/auth_/confirm',
+  path: '/auth/confirm',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/callback',
-  path: '/callback',
-  getParentRoute: () => AuthRoute,
+  id: '/auth_/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
   id: '/dashboard',
@@ -129,7 +141,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/bursaries': typeof BursariesRoute
   '/careers': typeof CareersRoute
   '/me': typeof MeRoute
@@ -139,6 +151,8 @@ export interface FileRoutesByFullPath {
   '/universities': typeof UniversitiesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/confirm': typeof AuthConfirmRoute
+  '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/journey/$slug': typeof JourneySlugRoute
   '/journey/bursary': typeof JourneyBursaryRoute
   '/journey/grade-12': typeof JourneyGrade12Route
@@ -150,7 +164,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/bursaries': typeof BursariesRoute
   '/careers': typeof CareersRoute
   '/me': typeof MeRoute
@@ -160,6 +174,8 @@ export interface FileRoutesByTo {
   '/universities': typeof UniversitiesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/confirm': typeof AuthConfirmRoute
+  '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/journey/$slug': typeof JourneySlugRoute
   '/journey/bursary': typeof JourneyBursaryRoute
   '/journey/grade-12': typeof JourneyGrade12Route
@@ -172,7 +188,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/bursaries': typeof BursariesRoute
   '/careers': typeof CareersRoute
   '/me': typeof MeRoute
@@ -181,7 +197,9 @@ export interface FileRoutesById {
   '/tvet-colleges': typeof TvetCollegesRoute
   '/universities': typeof UniversitiesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
-  '/auth/callback': typeof AuthCallbackRoute
+  '/auth_/callback': typeof AuthCallbackRoute
+  '/auth_/confirm': typeof AuthConfirmRoute
+  '/auth_/update-password': typeof AuthUpdatePasswordRoute
   '/journey/$slug': typeof JourneySlugRoute
   '/journey/bursary': typeof JourneyBursaryRoute
   '/journey/grade-12': typeof JourneyGrade12Route
@@ -205,6 +223,8 @@ export interface FileRouteTypes {
     | '/universities'
     | '/admin/dashboard'
     | '/auth/callback'
+    | '/auth/confirm'
+    | '/auth/update-password'
     | '/journey/$slug'
     | '/journey/bursary'
     | '/journey/grade-12'
@@ -226,6 +246,8 @@ export interface FileRouteTypes {
     | '/universities'
     | '/admin/dashboard'
     | '/auth/callback'
+    | '/auth/confirm'
+    | '/auth/update-password'
     | '/journey/$slug'
     | '/journey/bursary'
     | '/journey/grade-12'
@@ -246,7 +268,9 @@ export interface FileRouteTypes {
     | '/tvet-colleges'
     | '/universities'
     | '/admin/dashboard'
-    | '/auth/callback'
+    | '/auth_/callback'
+    | '/auth_/confirm'
+    | '/auth_/update-password'
     | '/journey/$slug'
     | '/journey/bursary'
     | '/journey/grade-12'
@@ -259,7 +283,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRouteWithChildren
-  AuthRoute: typeof AuthRouteWithChildren
+  AuthRoute: typeof AuthRoute
   BursariesRoute: typeof BursariesRoute
   CareersRoute: typeof CareersRoute
   MeRoute: typeof MeRoute
@@ -267,6 +291,9 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   TvetCollegesRoute: typeof TvetCollegesRoute
   UniversitiesRoute: typeof UniversitiesRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthConfirmRoute: typeof AuthConfirmRoute
+  AuthUpdatePasswordRoute: typeof AuthUpdatePasswordRoute
   JourneySlugRoute: typeof JourneySlugRoute
   JourneyBursaryRoute: typeof JourneyBursaryRoute
   JourneyGrade12Route: typeof JourneyGrade12Route
@@ -396,12 +423,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JourneySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/callback'
+    '/auth_/update-password': {
+      id: '/auth_/update-password'
+      path: '/auth/update-password'
+      fullPath: '/auth/update-password'
+      preLoaderRoute: typeof AuthUpdatePasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth_/confirm': {
+      id: '/auth_/confirm'
+      path: '/auth/confirm'
+      fullPath: '/auth/confirm'
+      preLoaderRoute: typeof AuthConfirmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth_/callback': {
+      id: '/auth_/callback'
+      path: '/auth/callback'
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof AuthRoute
+      parentRoute: typeof rootRouteImport
     }
     '/admin/dashboard': {
       id: '/admin/dashboard'
@@ -423,21 +464,11 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
-interface AuthRouteChildren {
-  AuthCallbackRoute: typeof AuthCallbackRoute
-}
-
-const AuthRouteChildren: AuthRouteChildren = {
-  AuthCallbackRoute: AuthCallbackRoute,
-}
-
-const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRouteWithChildren,
-  AuthRoute: AuthRouteWithChildren,
+  AuthRoute: AuthRoute,
   BursariesRoute: BursariesRoute,
   CareersRoute: CareersRoute,
   MeRoute: MeRoute,
@@ -445,6 +476,9 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   TvetCollegesRoute: TvetCollegesRoute,
   UniversitiesRoute: UniversitiesRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
+  AuthConfirmRoute: AuthConfirmRoute,
+  AuthUpdatePasswordRoute: AuthUpdatePasswordRoute,
   JourneySlugRoute: JourneySlugRoute,
   JourneyBursaryRoute: JourneyBursaryRoute,
   JourneyGrade12Route: JourneyGrade12Route,

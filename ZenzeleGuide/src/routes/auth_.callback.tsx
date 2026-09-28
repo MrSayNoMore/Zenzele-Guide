@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader as Loader2 } from "lucide-react";
 
-export const Route = createFileRoute("/auth/callback")({
+export const Route = createFileRoute("/auth_/callback")({
   head: () => ({ meta: [{ title: "Signing in... — Zenzele Guide" }] }),
   component: AuthCallback,
 });
