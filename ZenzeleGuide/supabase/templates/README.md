@@ -12,6 +12,18 @@ automatically on a hosted project. Paste each one into
 | Email Change | `email_change.html` | Confirm your new email for Zenzele Guide |
 | Invite | `invite.html` | You're invited to Zenzele Guide |
 
+### Security notifications
+
+Under **Authentication → Emails → Security**, turn on these two, and leave phone,
+sign-in method and MFA off (Zenzele only uses email and password):
+
+| Notification | File | Subject |
+| --- | --- | --- |
+| Password changed | `password_changed.html` | Your Zenzele Guide password was changed |
+| Email address changed | `email_changed.html` | Your Zenzele Guide email address was changed |
+
+The email-changed notice goes to the **old** address.
+
 For each template: set the **Subject**, switch the body to **Source**, and replace it with the file's contents.
 
 - Links go to `https://zenzeleguide.co.za/auth/confirm?token_hash=…` (the app's

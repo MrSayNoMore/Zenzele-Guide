@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Your email address was changed</title>
+</head>
+<body style="margin:0;padding:0;background:#F3F8F6;">
+<!-- Preheader (inbox preview text) -->
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">The email on your Zenzele Guide account was changed.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F3F8F6;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
+        <!-- Header -->
+        <tr>
+          <td style="background:#063c30;border-radius:16px 16px 0 0;padding:24px 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="vertical-align:middle;padding-right:12px;">
+                  <img src="https://zenzeleguide.co.za/email/mark.png" width="40" height="37" alt="" style="display:block;border:0;">
+                </td>
+                <td style="vertical-align:middle;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.3px;color:#ffffff;">
+                  Zenzele <span style="color:#9FE1CB;">Guide</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <!-- Gold accent -->
+        <tr><td style="background:#FAC775;height:4px;line-height:4px;font-size:0;">&nbsp;</td></tr>
+        <!-- Body -->
+        <tr>
+          <td style="background:#ffffff;padding:36px 32px 28px;font-family:Arial,Helvetica,sans-serif;color:#1f2d29;">
+            <p style="margin:0 0 8px;font-size:15px;color:#5b746a;">{{ if .Data.first_name }}Hi {{ .Data.first_name }},{{ else }}Hi there,{{ end }}</p>
+            <h1 style="margin:0 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.2;font-weight:700;color:#063c30;">Your email address was changed</h1>
+            <p style="margin:0 0 14px;font-size:16px;line-height:1.6;">The email address on your Zenzele Guide account was changed from <strong>{{ .OldEmail }}</strong> to <strong>{{ .Email }}</strong>.</p>
+            <p style="margin:0 0 14px;font-size:16px;line-height:1.6;">If this was you, there's nothing more to do.</p>
+            <!-- Button -->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0;">
+              <tr>
+                <td style="border-radius:8px;background:#1D9E75;">
+                  <a href="mailto:support@zenzeleguide.co.za?subject=Someone%20changed%20my%20Zenzele%20Guide%20email" target="_blank" style="display:inline-block;padding:14px 28px;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">Wasn't me: get help&nbsp;&rarr;</a>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#5b746a;">If you didn't make this change, contact us right away so we can secure your account.</p>
+            <p style="margin:0;padding-top:20px;border-top:1px solid #e3efe9;font-size:12px;line-height:1.6;color:#8aa39a;">
+              Or email us directly: <a href="mailto:support@zenzeleguide.co.za" style="color:#1D9E75;">support@zenzeleguide.co.za</a>
+            </p>
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td style="background:#ffffff;border-radius:0 0 16px 16px;border-top:1px solid #e3efe9;padding:20px 32px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#8aa39a;">
+            <strong style="color:#063c30;">Zenzele Guide</strong> &middot; Do it yourself &mdash; but not alone.<br>
+            Free guidance for South African learners, from matric to your first job.<br>
+            <a href="https://zenzeleguide.co.za" style="color:#1D9E75;text-decoration:none;">zenzeleguide.co.za</a>
+            &nbsp;&middot;&nbsp;
+            <a href="https://zenzeleguide.co.za/privacy" style="color:#1D9E75;text-decoration:none;">Privacy (POPIA)</a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
