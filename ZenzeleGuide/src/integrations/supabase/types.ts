@@ -542,26 +542,35 @@ export type Database = {
       }
       profiles: {
         Row: {
+          career_stage: string | null
           created_at: string
           display_name: string | null
+          first_name: string | null
           grade: string | null
           id: string
+          last_name: string | null
           province: string | null
           updated_at: string
         }
         Insert: {
+          career_stage?: string | null
           created_at?: string
           display_name?: string | null
+          first_name?: string | null
           grade?: string | null
           id: string
+          last_name?: string | null
           province?: string | null
           updated_at?: string
         }
         Update: {
+          career_stage?: string | null
           created_at?: string
           display_name?: string | null
+          first_name?: string | null
           grade?: string | null
           id?: string
+          last_name?: string | null
           province?: string | null
           updated_at?: string
         }

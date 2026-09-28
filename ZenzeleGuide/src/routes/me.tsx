@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
@@ -7,6 +8,7 @@ import {
   ExternalLink,
   GraduationCap,
   Loader2,
+  Pencil,
   ShieldCheck,
   Trash2,
   Wallet,
@@ -14,6 +16,8 @@ import {
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { signOut, useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { CAREER_STAGES, careerStageLabel } from "@/lib/career";
 import {
   deleteMyResult,
   listMyResults,
@@ -137,6 +141,8 @@ function Account({ email }: { email: string }) {
         </button>
       </div>
 
+      <ProfileCard />
+
       {/* Results */}
       <section className="mt-10">
         <h2 className="font-sans text-lg font-semibold text-foreground">Saved results</h2>
@@ -259,5 +265,172 @@ function Account({ email }: { email: string }) {
         )}
       </section>
     </>
+  );
+}
+
+type Profile = { first_name: string | null; last_name: string | null; career_stage: string | null };
+
+/** Name, surname and career stage; editable so earlier sign-ups can fill them in. */
+function ProfileCard() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const profile = useQuery({
+    queryKey: ["my-profile", user?.id],
+    enabled: !!user,
+    queryFn: async (): Promise<Profile | null> => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, career_stage")
+        .eq("id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<Profile>({ first_name: "", last_name: "", career_stage: "" });
+  const incomplete =
+    !!profile.data &&
+    (!profile.data.first_name || !profile.data.last_name || !profile.data.career_stage);
+
+  useEffect(() => {
+    if (profile.data) {
+      setForm({
+        first_name: profile.data.first_name ?? "",
+        last_name: profile.data.last_name ?? "",
+        career_stage: profile.data.career_stage ?? "",
+      });
+    }
+  }, [profile.data]);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const first = (form.first_name ?? "").trim();
+      const last = (form.last_name ?? "").trim();
+      if (!first || !last || !form.career_stage)
+        throw new Error("Please fill in all three fields.");
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          first_name: first,
+          last_name: last,
+          career_stage: form.career_stage,
+          display_name: `${first} ${last}`,
+        })
+        .eq("id", user!.id);
+      if (error) throw new Error("Could not save your details. Please try again.");
+      // Keep auth metadata in step so emails greet people by name.
+      await supabase.auth.updateUser({
+        data: {
+          first_name: first,
+          last_name: last,
+          full_name: `${first} ${last}`,
+          career_stage: form.career_stage,
+        },
+      });
+    },
+    onSuccess: () => {
+      setEditing(false);
+      queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+    },
+  });
+
+  if (!user || profile.isLoading) return null;
+  const showForm = editing || incomplete;
+
+  return (
+    <section className="mt-10 rounded-lg border border-border bg-card p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="font-sans text-lg font-semibold text-foreground">Your details</h2>
+          {!showForm && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {profile.data?.first_name} {profile.data?.last_name}
+              {careerStageLabel(profile.data?.career_stage) &&
+                ` · ${careerStageLabel(profile.data?.career_stage)}`}
+            </p>
+          )}
+          {incomplete && !editing && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Add your name and where you are, so we can tailor your guidance.
+            </p>
+          )}
+        </div>
+        {!showForm && (
+          <button
+            onClick={() => setEditing(true)}
+            className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium text-primary hover:bg-muted"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </button>
+        )}
+      </div>
+
+      {showForm && (
+        <form
+          className="mt-4 grid gap-3 sm:grid-cols-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            save.mutate();
+          }}
+        >
+          <input
+            aria-label="Name"
+            placeholder="Name"
+            autoComplete="given-name"
+            maxLength={60}
+            value={form.first_name ?? ""}
+            onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <input
+            aria-label="Surname"
+            placeholder="Surname"
+            autoComplete="family-name"
+            maxLength={60}
+            value={form.last_name ?? ""}
+            onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <select
+            aria-label="Where are you right now?"
+            value={form.career_stage ?? ""}
+            onChange={(e) => setForm({ ...form, career_stage: e.target.value })}
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="" disabled>
+              Where are you right now?
+            </option>
+            {CAREER_STAGES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <div className="flex items-center gap-3 sm:col-span-3">
+            <button
+              type="submit"
+              disabled={save.isPending}
+              className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            >
+              {save.isPending ? "Saving…" : "Save details"}
+            </button>
+            {editing && !incomplete && (
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                Cancel
+              </button>
+            )}
+            {save.isError && (
+              <p className="text-sm text-destructive">{(save.error as Error).message}</p>
+            )}
+          </div>
+        </form>
+      )}
+    </section>
   );
 }
