@@ -29,6 +29,7 @@ import { Route as JourneyNsfasRouteImport } from './routes/journey.nsfas'
 import { Route as JourneyGrade12RouteImport } from './routes/journey.grade-12'
 import { Route as JourneyBursaryRouteImport } from './routes/journey.bursary'
 import { Route as JourneySlugRouteImport } from './routes/journey.$slug'
+import { Route as CareersSlugRouteImport } from './routes/careers_.$slug'
 import { Route as BursariesSlugRouteImport } from './routes/bursaries_.$slug'
 import { Route as AuthUpdatePasswordRouteImport } from './routes/auth_.update-password'
 import { Route as AuthConfirmRouteImport } from './routes/auth_.confirm'
@@ -38,6 +39,7 @@ import { Route as AdminTvetRouteImport } from './routes/admin.tvet'
 import { Route as AdminSubjectsRouteImport } from './routes/admin.subjects'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminCoursesRouteImport } from './routes/admin.courses'
+import { Route as AdminCareersRouteImport } from './routes/admin.careers'
 import { Route as AdminBursariesRouteImport } from './routes/admin.bursaries'
 import { Route as AdminAiImportRouteImport } from './routes/admin.ai-import'
 
@@ -141,6 +143,11 @@ const JourneySlugRoute = JourneySlugRouteImport.update({
   path: '/journey/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CareersSlugRoute = CareersSlugRouteImport.update({
+  id: '/careers_/$slug',
+  path: '/careers/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BursariesSlugRoute = BursariesSlugRouteImport.update({
   id: '/bursaries_/$slug',
   path: '/bursaries/$slug',
@@ -186,6 +193,11 @@ const AdminCoursesRoute = AdminCoursesRouteImport.update({
   path: '/courses',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCareersRoute = AdminCareersRouteImport.update({
+  id: '/careers',
+  path: '/careers',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminBursariesRoute = AdminBursariesRouteImport.update({
   id: '/bursaries',
   path: '/bursaries',
@@ -211,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/universities': typeof UniversitiesRoute
   '/admin/ai-import': typeof AdminAiImportRoute
   '/admin/bursaries': typeof AdminBursariesRoute
+  '/admin/careers': typeof AdminCareersRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/subjects': typeof AdminSubjectsRoute
@@ -220,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/auth/confirm': typeof AuthConfirmRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/bursaries/$slug': typeof BursariesSlugRoute
+  '/careers/$slug': typeof CareersSlugRoute
   '/journey/$slug': typeof JourneySlugRoute
   '/journey/bursary': typeof JourneyBursaryRoute
   '/journey/grade-12': typeof JourneyGrade12Route
@@ -243,6 +257,7 @@ export interface FileRoutesByTo {
   '/universities': typeof UniversitiesRoute
   '/admin/ai-import': typeof AdminAiImportRoute
   '/admin/bursaries': typeof AdminBursariesRoute
+  '/admin/careers': typeof AdminCareersRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/subjects': typeof AdminSubjectsRoute
@@ -252,6 +267,7 @@ export interface FileRoutesByTo {
   '/auth/confirm': typeof AuthConfirmRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/bursaries/$slug': typeof BursariesSlugRoute
+  '/careers/$slug': typeof CareersSlugRoute
   '/journey/$slug': typeof JourneySlugRoute
   '/journey/bursary': typeof JourneyBursaryRoute
   '/journey/grade-12': typeof JourneyGrade12Route
@@ -277,6 +293,7 @@ export interface FileRoutesById {
   '/universities': typeof UniversitiesRoute
   '/admin/ai-import': typeof AdminAiImportRoute
   '/admin/bursaries': typeof AdminBursariesRoute
+  '/admin/careers': typeof AdminCareersRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/subjects': typeof AdminSubjectsRoute
@@ -286,6 +303,7 @@ export interface FileRoutesById {
   '/auth_/confirm': typeof AuthConfirmRoute
   '/auth_/update-password': typeof AuthUpdatePasswordRoute
   '/bursaries_/$slug': typeof BursariesSlugRoute
+  '/careers_/$slug': typeof CareersSlugRoute
   '/journey/$slug': typeof JourneySlugRoute
   '/journey/bursary': typeof JourneyBursaryRoute
   '/journey/grade-12': typeof JourneyGrade12Route
@@ -312,6 +330,7 @@ export interface FileRouteTypes {
     | '/universities'
     | '/admin/ai-import'
     | '/admin/bursaries'
+    | '/admin/careers'
     | '/admin/courses'
     | '/admin/dashboard'
     | '/admin/subjects'
@@ -321,6 +340,7 @@ export interface FileRouteTypes {
     | '/auth/confirm'
     | '/auth/update-password'
     | '/bursaries/$slug'
+    | '/careers/$slug'
     | '/journey/$slug'
     | '/journey/bursary'
     | '/journey/grade-12'
@@ -344,6 +364,7 @@ export interface FileRouteTypes {
     | '/universities'
     | '/admin/ai-import'
     | '/admin/bursaries'
+    | '/admin/careers'
     | '/admin/courses'
     | '/admin/dashboard'
     | '/admin/subjects'
@@ -353,6 +374,7 @@ export interface FileRouteTypes {
     | '/auth/confirm'
     | '/auth/update-password'
     | '/bursaries/$slug'
+    | '/careers/$slug'
     | '/journey/$slug'
     | '/journey/bursary'
     | '/journey/grade-12'
@@ -377,6 +399,7 @@ export interface FileRouteTypes {
     | '/universities'
     | '/admin/ai-import'
     | '/admin/bursaries'
+    | '/admin/careers'
     | '/admin/courses'
     | '/admin/dashboard'
     | '/admin/subjects'
@@ -386,6 +409,7 @@ export interface FileRouteTypes {
     | '/auth_/confirm'
     | '/auth_/update-password'
     | '/bursaries_/$slug'
+    | '/careers_/$slug'
     | '/journey/$slug'
     | '/journey/bursary'
     | '/journey/grade-12'
@@ -413,6 +437,7 @@ export interface RootRouteChildren {
   AuthConfirmRoute: typeof AuthConfirmRoute
   AuthUpdatePasswordRoute: typeof AuthUpdatePasswordRoute
   BursariesSlugRoute: typeof BursariesSlugRoute
+  CareersSlugRoute: typeof CareersSlugRoute
   JourneySlugRoute: typeof JourneySlugRoute
   JourneyBursaryRoute: typeof JourneyBursaryRoute
   JourneyGrade12Route: typeof JourneyGrade12Route
@@ -565,6 +590,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JourneySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/careers_/$slug': {
+      id: '/careers_/$slug'
+      path: '/careers/$slug'
+      fullPath: '/careers/$slug'
+      preLoaderRoute: typeof CareersSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/bursaries_/$slug': {
       id: '/bursaries_/$slug'
       path: '/bursaries/$slug'
@@ -628,6 +660,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCoursesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/careers': {
+      id: '/admin/careers'
+      path: '/careers'
+      fullPath: '/admin/careers'
+      preLoaderRoute: typeof AdminCareersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/bursaries': {
       id: '/admin/bursaries'
       path: '/bursaries'
@@ -648,6 +687,7 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminAiImportRoute: typeof AdminAiImportRoute
   AdminBursariesRoute: typeof AdminBursariesRoute
+  AdminCareersRoute: typeof AdminCareersRoute
   AdminCoursesRoute: typeof AdminCoursesRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminSubjectsRoute: typeof AdminSubjectsRoute
@@ -659,6 +699,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAiImportRoute: AdminAiImportRoute,
   AdminBursariesRoute: AdminBursariesRoute,
+  AdminCareersRoute: AdminCareersRoute,
   AdminCoursesRoute: AdminCoursesRoute,
   AdminDashboardRoute: AdminDashboardRoute,
   AdminSubjectsRoute: AdminSubjectsRoute,
@@ -685,6 +726,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthConfirmRoute: AuthConfirmRoute,
   AuthUpdatePasswordRoute: AuthUpdatePasswordRoute,
   BursariesSlugRoute: BursariesSlugRoute,
+  CareersSlugRoute: CareersSlugRoute,
   JourneySlugRoute: JourneySlugRoute,
   JourneyBursaryRoute: JourneyBursaryRoute,
   JourneyGrade12Route: JourneyGrade12Route,

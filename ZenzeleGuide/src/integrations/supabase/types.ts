@@ -250,8 +250,10 @@ export type Database = {
           field_of_study: string | null
           id: string
           is_published: boolean
+          last_verified_at: string | null
           name: string
           outlook: string | null
+          source_url: string | null
           slug: string
           typical_salary_range: string | null
           updated_at: string
@@ -262,8 +264,10 @@ export type Database = {
           field_of_study?: string | null
           id?: string
           is_published?: boolean
+          last_verified_at?: string | null
           name: string
           outlook?: string | null
+          source_url?: string | null
           slug: string
           typical_salary_range?: string | null
           updated_at?: string
@@ -274,8 +278,10 @@ export type Database = {
           field_of_study?: string | null
           id?: string
           is_published?: boolean
+          last_verified_at?: string | null
           name?: string
           outlook?: string | null
+          source_url?: string | null
           slug?: string
           typical_salary_range?: string | null
           updated_at?: string
