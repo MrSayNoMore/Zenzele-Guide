@@ -14,6 +14,7 @@ import {
   Wallet,
   X,
   Wrench,
+  Compass,
 } from "lucide-react";
 import { Logo } from "@/components/site/logo";
 import { Toaster } from "@/components/ui/sonner";
@@ -34,6 +35,7 @@ const NAV = [
   { path: "/admin/courses", label: "Courses", icon: GraduationCap },
   { path: "/admin/tvet", label: "TVET colleges", icon: Wrench },
   { path: "/admin/bursaries", label: "Bursaries", icon: Wallet },
+  { path: "/admin/careers", label: "Careers", icon: Compass },
   { path: "/admin/subjects", label: "NSC subjects", icon: BookOpen },
   { path: "/admin/ai-import", label: "AI import", icon: Sparkles },
 ] as const;

@@ -238,9 +238,63 @@ export function eligibilityLines(
   if (typeof e.min_percentage_avg === "number")
     lines.push(`An average of at least ${e.min_percentage_avg}%.`);
   if (typeof e.household_income_max === "number")
-    lines.push(
-      `Household income of ${formatRand(e.household_income_max)} a year or less.`,
-    );
+    lines.push(`Household income of ${formatRand(e.household_income_max)} a year or less.`);
   if (strings(e.demographics).includes("disability")) lines.push("For learners with a disability.");
   return lines;
+}
+
+// ---------------------------------------------------------------------------
+// Careers
+// ---------------------------------------------------------------------------
+
+export async function listCareers() {
+  const { data, error } = await supabase
+    .from("careers")
+    .select("id, name, slug, field_of_study, description")
+    .order("name");
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** A career with its subjects, and the courses, TVET programmes and bursaries in its field. */
+export async function getCareer(slug: string) {
+  const { data: career, error } = await supabase
+    .from("careers")
+    .select(
+      "id, name, slug, field_of_study, description, outlook, typical_salary_range, source_url, last_verified_at, career_subjects(recommended_min_level, is_essential, subjects(name))",
+    )
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error) throw error;
+  if (!career) return null;
+  const field = career.field_of_study;
+  if (!field) return { career, courses: [], programmes: [], bursaries: [] };
+
+  const [courses, programmes, bursaries] = await Promise.all([
+    supabase
+      .from("courses")
+      .select("id, name, min_aps, faculties!inner(universities!inner(name, slug))")
+      .eq("field_of_study", field)
+      .order("name")
+      .limit(12),
+    supabase
+      .from("tvet_programs")
+      .select("id, name, nqf_level, tvet_colleges!inner(name, slug)")
+      .eq("field_of_study", field)
+      .order("name")
+      .limit(12),
+    supabase
+      .from("bursaries")
+      .select("id, name, slug, provider, bursary_cycles(year, opens_at, closes_at, notes)")
+      .contains("fields_of_study", [field])
+      .order("name")
+      .limit(12),
+  ]);
+  for (const r of [courses, programmes, bursaries]) if (r.error) throw r.error;
+  return {
+    career,
+    courses: courses.data ?? [],
+    programmes: programmes.data ?? [],
+    bursaries: bursaries.data ?? [],
+  };
 }
