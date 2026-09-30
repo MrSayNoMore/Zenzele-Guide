@@ -21,6 +21,7 @@ import {
 } from "@/components/admin/editor";
 import {
   CITIZENSHIP,
+  STUDY_LEVELS,
   FIELDS_OF_STUDY,
   PROVINCES,
   isHttpUrl,
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/admin/bursaries")({
 
 // Shape the bursary matcher reads (BursaryPredicates in src/engine/schemas.ts).
 type Eligibility = {
+  study_levels?: string[];
   citizenship?: string[];
   provinces?: string[];
   fields?: string[];
@@ -77,6 +79,7 @@ type Form = {
   value_description: string;
   description: string;
   fields: string[];
+  studyLevels: string[];
   citizenship: string[];
   provinces: string[];
   disabilityOnly: boolean;
@@ -101,6 +104,7 @@ const emptyForm: Form = {
   value_description: "",
   description: "",
   fields: [],
+  studyLevels: [],
   citizenship: [],
   provinces: [],
   disabilityOnly: false,
@@ -121,6 +125,7 @@ function toForm(b: BursaryRow): Form {
       : {}
   ) as Eligibility;
   const {
+    study_levels,
     citizenship,
     provinces,
     fields,
@@ -140,6 +145,7 @@ function toForm(b: BursaryRow): Form {
     value_description: b.value_description ?? "",
     description: b.description ?? "",
     fields: fields ?? b.fields_of_study ?? [],
+    studyLevels: study_levels ?? [],
     citizenship: citizenship ?? [],
     provinces: provinces ?? [],
     disabilityOnly: (demographics ?? []).includes("disability"),
@@ -165,6 +171,7 @@ function toForm(b: BursaryRow): Form {
 
 function buildEligibility(f: Form): Eligibility {
   const e: Eligibility = { ...f.otherEligibility };
+  if (f.studyLevels.length) e.study_levels = f.studyLevels;
   if (f.citizenship.length) e.citizenship = f.citizenship;
   if (f.provinces.length) e.provinces = f.provinces;
   if (f.fields.length) e.fields = f.fields;
@@ -487,6 +494,17 @@ function BursariesAdmin() {
               options={FIELDS_OF_STUDY}
               value={form.fields}
               onChange={(v) => set("fields", v)}
+            />
+          </Field>
+          <Field
+            group
+            label="Stage of study"
+            hint="Leave empty if the provider doesn't say. Used by the university-student journey."
+          >
+            <CheckboxGroup
+              options={STUDY_LEVELS}
+              value={form.studyLevels}
+              onChange={(v) => set("studyLevels", v)}
             />
           </Field>
           <Field group label="Citizenship">

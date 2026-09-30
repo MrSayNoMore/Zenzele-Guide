@@ -214,6 +214,13 @@ const PROVINCE_LABELS: Record<string, string> = {
   WC: "Western Cape",
 };
 
+const STUDY_LEVEL_WORDS: Record<string, string> = {
+  first_year: "first-year students",
+  continuing: "continuing undergraduates",
+  postgraduate: "postgraduate students",
+  tvet: "TVET college students",
+};
+
 const list = (items: string[]) =>
   items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} or ${items.at(-1)}`;
 
@@ -227,6 +234,10 @@ export function eligibilityLines(
   const strings = (v: unknown) =>
     Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
   const lines: string[] = [];
+  const levels = strings(e.study_levels)
+    .map((l) => STUDY_LEVEL_WORDS[l])
+    .filter(Boolean);
+  if (levels.length) lines.push(`For ${list(levels)}.`);
   const citizenship = strings(e.citizenship);
   if (citizenship.length)
     lines.push(`Open to ${list(citizenship.map((c) => CITIZENSHIP_LABELS[c] ?? c))}.`);
@@ -297,4 +308,121 @@ export async function getCareer(slug: string) {
     programmes: programmes.data ?? [],
     bursaries: bursaries.data ?? [],
   };
+}
+
+// ---------------------------------------------------------------------------
+// Journeys: Grade 10 subject choice, university students
+// ---------------------------------------------------------------------------
+
+export async function listCareersWithSubjects() {
+  const { data, error } = await supabase
+    .from("careers")
+    .select(
+      "id, name, slug, field_of_study, career_subjects(recommended_min_level, is_essential, subjects(code, name))",
+    )
+    .order("name");
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** How many listed programmes need pure Mathematics, as a plain fact for subject choice. */
+export async function mathematicsStats() {
+  const [all, maths] = await Promise.all([
+    supabase.from("courses").select("id", { count: "exact", head: true }),
+    supabase
+      .from("course_requirements")
+      .select("course_id, subjects!inner(code), courses!inner(id)")
+      .eq("subjects.code", "mathematics")
+      .eq("is_required", true),
+  ]);
+  if (all.error) throw all.error;
+  if (maths.error) throw maths.error;
+  return {
+    totalCourses: all.count ?? 0,
+    needMaths: new Set((maths.data ?? []).map((r) => r.course_id)).size,
+  };
+}
+
+export async function listBursariesWithEligibility() {
+  const { data, error } = await supabase
+    .from("bursaries")
+    .select(
+      "id, name, slug, provider, value_description, fields_of_study, eligibility, bursary_cycles(year, opens_at, closes_at, notes)",
+    )
+    .order("name");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export type CareerWithSubjects = {
+  name: string;
+  career_subjects: {
+    recommended_min_level: number | null;
+    is_essential: boolean;
+    subjects: { code: string; name: string } | null;
+  }[];
+};
+
+export type SubjectAdvice = {
+  code: string;
+  name: string;
+  essential: boolean;
+  level: number | null;
+  careers: string[];
+};
+
+/** Subjects for the careers a learner picked: essential first, highest level asked for. */
+export function combineCareerSubjects(careers: CareerWithSubjects[]): SubjectAdvice[] {
+  const bySubject = new Map<string, SubjectAdvice>();
+  for (const c of careers) {
+    for (const cs of c.career_subjects) {
+      if (!cs.subjects) continue;
+      const cur = bySubject.get(cs.subjects.code) ?? {
+        code: cs.subjects.code,
+        name: cs.subjects.name,
+        essential: false,
+        level: null,
+        careers: [],
+      };
+      cur.essential ||= cs.is_essential;
+      if (cs.recommended_min_level != null)
+        cur.level = Math.max(cur.level ?? 0, cs.recommended_min_level);
+      if (!cur.careers.includes(c.name)) cur.careers.push(c.name);
+      bySubject.set(cs.subjects.code, cur);
+    }
+  }
+  return [...bySubject.values()].sort(
+    (a, b) =>
+      Number(b.essential) - Number(a.essential) ||
+      b.careers.length - a.careers.length ||
+      a.name.localeCompare(b.name),
+  );
+}
+
+type BursaryForStudent = { fields_of_study: string[] | null; eligibility: unknown };
+
+/**
+ * Bursaries for a student at a given stage and field: `matched` say they
+ * fund this stage; `unstated` don't say which stage (check with the provider).
+ * A bursary with no field restriction counts for every field.
+ */
+export function bursariesForStudent<T extends BursaryForStudent>(
+  bursaries: T[],
+  level: string,
+  field: string,
+): { matched: T[]; unstated: T[] } {
+  const matched: T[] = [];
+  const unstated: T[] = [];
+  for (const b of bursaries) {
+    const fields = b.fields_of_study ?? [];
+    if (field && fields.length && !fields.includes(field)) continue;
+    const e =
+      b.eligibility && typeof b.eligibility === "object" && !Array.isArray(b.eligibility)
+        ? (b.eligibility as Record<string, unknown>)
+        : {};
+    const levels = Array.isArray(e.study_levels) ? (e.study_levels as unknown[]) : [];
+    if (!levels.length) unstated.push(b);
+    else if (levels.includes(level)) matched.push(b);
+  }
+  return { matched, unstated };
 }

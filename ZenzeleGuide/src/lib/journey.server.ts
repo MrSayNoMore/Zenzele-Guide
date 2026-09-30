@@ -181,11 +181,13 @@ export async function fetchPublishedCourses() {
             id,
             name,
             slug,
-            province
+            province,
+            is_published
           )
         )
       `)
-      .eq("is_published", true);
+      .eq("is_published", true)
+      .eq("draft_state", "approved");
 
     if (error) {
       console.error("Error fetching courses:", error);
@@ -213,10 +215,12 @@ export async function fetchPublishedCourses() {
       }
     }
 
-    return courses.map((course) => ({
+    // Only courses at published universities reach learners.
+    return courses.filter((course) => course.faculties?.universities?.is_published).map((course) => ({
       course_id: course.id,
       course_name: course.name,
       slug: course.slug,
+      university_slug: course.faculties?.universities?.slug,
       min_aps: course.min_aps,
       requires_nbt: course.requires_nbt,
       university_id: course.faculties?.university_id,

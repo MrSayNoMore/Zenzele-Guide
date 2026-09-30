@@ -38,6 +38,14 @@ export const TVET_PROGRAM_TYPES = [
   { value: "occupational", label: "Occupational programme" },
 ] as const;
 
+// Who a bursary is for, by stage of study (bursary eligibility.study_levels).
+export const STUDY_LEVELS = [
+  { value: "first_year", label: "First-year students (school leavers)" },
+  { value: "continuing", label: "Continuing undergraduates (2nd year and up)" },
+  { value: "postgraduate", label: "Postgraduate (Honours, Master's, PhD)" },
+  { value: "tvet", label: "TVET college students" },
+] as const;
+
 export const CITIZENSHIP = [
   { value: "sa_citizen", label: "SA citizens" },
   { value: "sa_permanent_resident", label: "SA permanent residents" },

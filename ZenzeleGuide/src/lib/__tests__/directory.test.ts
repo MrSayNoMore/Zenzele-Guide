@@ -54,6 +54,7 @@ describe("eligibilityLines", () => {
     expect(
       eligibilityLines(
         {
+          study_levels: ["continuing", "postgraduate"],
           citizenship: ["sa_citizen", "sa_permanent_resident"],
           provinces: ["GP"],
           fields: ["engineering", "science"],
@@ -64,6 +65,7 @@ describe("eligibilityLines", () => {
         (f) => f.toUpperCase(),
       ),
     ).toEqual([
+      "For continuing undergraduates or postgraduate students.",
       "Open to South African citizens or South African permanent residents.",
       "For learners from Gauteng.",
       "For studies in ENGINEERING or SCIENCE.",
@@ -85,5 +87,72 @@ describe("formatting", () => {
     expect(formatRand(600000)).toBe("R600\u00a0000");
     expect(formatRand(1250000)).toBe("R1\u00a0250\u00a0000");
     expect(formatRand(950)).toBe("R950");
+  });
+});
+
+describe("journey helpers", () => {
+  it("combines subjects across careers, essential first, highest level", async () => {
+    const { combineCareerSubjects } = await import("../directory");
+    const subj = (code: string, name: string) => ({ code, name });
+    const out = combineCareerSubjects([
+      {
+        name: "Engineer",
+        career_subjects: [
+          {
+            recommended_min_level: 6,
+            is_essential: true,
+            subjects: subj("mathematics", "Mathematics"),
+          },
+          {
+            recommended_min_level: 5,
+            is_essential: true,
+            subjects: subj("physical_sciences", "Physical Sciences"),
+          },
+        ],
+      },
+      {
+        name: "Developer",
+        career_subjects: [
+          {
+            recommended_min_level: 5,
+            is_essential: true,
+            subjects: subj("mathematics", "Mathematics"),
+          },
+          {
+            recommended_min_level: null,
+            is_essential: false,
+            subjects: subj("information_technology", "Information Technology"),
+          },
+          { recommended_min_level: 4, is_essential: false, subjects: null },
+        ],
+      },
+    ]);
+    expect(out.map((s) => [s.code, s.essential, s.level, s.careers])).toEqual([
+      ["mathematics", true, 6, ["Engineer", "Developer"]],
+      ["physical_sciences", true, 5, ["Engineer"]],
+      ["information_technology", false, null, ["Developer"]],
+    ]);
+  });
+
+  it("matches bursaries to a student's stage and field", async () => {
+    const { bursariesForStudent } = await import("../directory");
+    const b = (id: string, fields: string[], levels?: string[]) => ({
+      id,
+      fields_of_study: fields,
+      eligibility: levels ? { study_levels: levels } : {},
+    });
+    const r = bursariesForStudent(
+      [
+        b("pg-eng", ["engineering"], ["postgraduate"]),
+        b("pg-any-field", [], ["postgraduate", "continuing"]),
+        b("ug-eng", ["engineering"], ["first_year"]),
+        b("eng-unstated", ["engineering"]),
+        b("pg-law", ["law"], ["postgraduate"]),
+      ],
+      "postgraduate",
+      "engineering",
+    );
+    expect(r.matched.map((x) => x.id)).toEqual(["pg-eng", "pg-any-field"]);
+    expect(r.unstated.map((x) => x.id)).toEqual(["eng-unstated"]);
   });
 });
