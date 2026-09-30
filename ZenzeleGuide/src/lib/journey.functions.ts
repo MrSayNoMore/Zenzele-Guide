@@ -181,6 +181,79 @@ export const computeGrade12Match = createServerFn({ method: "POST" })
   });
 
 /**
+ * Grade 11 planner: where the learner's current marks stand, which
+ * programmes are within reach and what to improve. Grade 11 marks are
+ * provisional, so nothing is saved.
+ */
+const Grade11InputSchema = z.object({
+  subjects: z
+    .array(
+      z.object({
+        code: z.string().regex(/^[a-z][a-z0-9_]{1,59}$/),
+        percentage: z.number().min(0).max(100),
+      }),
+    )
+    .min(7, "Add at least 7 subjects, including Life Orientation.")
+    .max(9),
+});
+
+export const previewGrade11 = createServerFn({ method: "POST" })
+  .validator(Grade11InputSchema)
+  .handler(async ({ data }) => {
+    const { fetchAllApsRules, fetchPublishedCourses } = await import("./journey.server");
+    const { quickWins } = await import("./grade11");
+    const [apsRules, courses] = await Promise.all([fetchAllApsRules(), fetchPublishedCourses()]);
+    const rule = apsRules.values().next().value;
+    if (!rule) throw new Error("No APS rule configured");
+
+    const profile = LearnerProfile.parse({
+      citizenship: "sa_citizen",
+      household_income_band: "unsure",
+      subjects: data.subjects,
+    });
+    const aps = computeAps(profile, rule);
+    const classified = courses
+      .filter((c) => c.min_aps != null)
+      .map((course) => ({
+        ...classifyCourse(
+          aps,
+          {
+            ...course,
+            min_aps: course.min_aps ?? 0,
+            // Grade 11 learners haven't written the NBT; judge marks only.
+            nbt: undefined,
+            required_subjects: course.required_subjects.map((s) => ({
+              code: s.code as never,
+              min_level: s.min_level,
+            })),
+          },
+          profile,
+          rule,
+        ),
+        course_name: course.course_name,
+        university_name: course.university_name,
+        university_slug: course.university_slug ?? null,
+        requires_nbt: course.requires_nbt,
+        min_aps: course.min_aps ?? 0,
+      }));
+    // sortMatches reorders the same objects; keep their extra fields' types.
+    const matches = sortMatches(classified) as typeof classified;
+    const pick = (status: string) => matches.filter((m) => m.status === status).slice(0, 30);
+    return {
+      totalAps: aps.total_aps,
+      subjectsScored: aps.subjects_scored,
+      countedCodes: aps.counted_subject_codes,
+      conversion: rule.conversion,
+      method: { topN: rule.top_n, lifeOrientation: rule.life_orientation },
+      quickWins: quickWins(aps.subjects_scored, aps.counted_subject_codes, rule.conversion),
+      counts: countByStatus(matches),
+      totalCourses: matches.length,
+      qualifies: pick("qualifies"),
+      borderline: pick("borderline"),
+    };
+  });
+
+/**
  * Computes and persists NSFAS eligibility results.
  */
 export const computeNsfasCheck = createServerFn({ method: "POST" })
