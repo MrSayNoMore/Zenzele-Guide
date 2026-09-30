@@ -622,7 +622,8 @@ export async function deleteResultForUser(resultId: string, userId: string): Pro
   if (error) throw new Error("Could not remove this result.");
 }
 
-export type SavedKind = "course" | "bursary" | "tvet_program";
+import type { SavedKind } from "./saved";
+export type { SavedKind };
 
 export async function listSavedRefIds(userId: string): Promise<string[]> {
   const supabase = await getSupabaseAdmin();
@@ -664,7 +665,7 @@ export async function listSavedItemsForUser(userId: string) {
   if (!items?.length) return [];
 
   const ids = (kind: string) => items.filter((i) => i.kind === kind).map((i) => i.ref_id);
-  const [courses, bursaries, programmes] = await Promise.all([
+  const [courses, bursaries, programmes, opportunities] = await Promise.all([
     ids("course").length
       ? supabase
           .from("courses")
@@ -677,6 +678,13 @@ export async function listSavedItemsForUser(userId: string) {
     ids("tvet_program").length
       ? supabase.from("tvet_programs").select("id, name, tvet_colleges(name)").in("id", ids("tvet_program"))
       : Promise.resolve({ data: [] as any[] }),
+    ids("opportunity").length
+      ? supabase
+          .from("opportunities")
+          .select("id, title, organisation, website_url")
+          .eq("is_published", true)
+          .in("id", ids("opportunity"))
+      : Promise.resolve({ data: [] as any[] }),
   ]);
 
   const byId = new Map<string, { title: string; subtitle: string; url?: string | null }>();
@@ -688,6 +696,9 @@ export async function listSavedItemsForUser(userId: string) {
   }
   for (const p of (programmes.data ?? []) as any[]) {
     byId.set(p.id, { title: p.name, subtitle: p.tvet_colleges?.name ?? "" });
+  }
+  for (const o of (opportunities.data ?? []) as any[]) {
+    byId.set(o.id, { title: o.title, subtitle: o.organisation, url: o.website_url });
   }
 
   return items.map((i) => ({

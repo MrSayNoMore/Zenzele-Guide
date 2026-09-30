@@ -17,6 +17,7 @@ export function SiteFooter() {
             <li><a href="/tvet-colleges" className="hover:text-white">TVET colleges</a></li>
             <li><a href="/bursaries" className="hover:text-white">Bursaries</a></li>
             <li><a href="/careers" className="hover:text-white">Careers</a></li>
+            <li><a href="/opportunities" className="hover:text-white">Learnerships &amp; internships</a></li>
           </ul>
         </div>
         <div>
