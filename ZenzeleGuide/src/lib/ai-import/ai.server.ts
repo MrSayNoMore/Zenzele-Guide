@@ -79,19 +79,22 @@ function parseJson(content: string): unknown {
 
 type AiResult = { data: unknown; model: string };
 
+/** A PDF or image sent with the prompt (base64), read by Gemini. */
+export type AttachedFile = { data: string; mime: string };
+
 /**
- * One AI call that must return JSON. `pdfBase64` is only read by Gemini.
+ * One AI call that must return JSON. `file` (a PDF or image) is only read by Gemini.
  * `avoidModel`: prefer a different model (used for the independent double-check).
  */
 async function chatJson(
   system: string,
   user: string,
   maxTokens: number,
-  pdfBase64?: string,
+  file?: AttachedFile,
   avoidModel?: string,
 ): Promise<AiResult> {
   return provider() === "gemini"
-    ? geminiJson(system, user, maxTokens, pdfBase64, avoidModel)
+    ? geminiJson(system, user, maxTokens, file, avoidModel)
     : { data: await groqJson(system, user, maxTokens), model: aiModel() };
 }
 
@@ -115,7 +118,7 @@ async function geminiJson(
   system: string,
   user: string,
   maxTokens: number,
-  pdfBase64?: string,
+  file?: AttachedFile,
   avoidModel?: string,
 ): Promise<AiResult> {
   const key = serverEnv("GEMINI_API_KEY");
@@ -123,7 +126,7 @@ async function geminiJson(
   const base = serverEnv("GEMINI_BASE_URL") || "https://generativelanguage.googleapis.com/v1beta";
 
   const parts: Record<string, unknown>[] = [];
-  if (pdfBase64) parts.push({ inline_data: { mime_type: "application/pdf", data: pdfBase64 } });
+  if (file) parts.push({ inline_data: { mime_type: file.mime, data: file.data } });
   parts.push({ text: user });
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: system }] },
@@ -475,8 +478,10 @@ export async function extractDrafts(
     universityName?: string;
     chunkNumber: number;
     chunkCount: number;
-    /** The same pages as a PDF, for an AI that reads PDFs (Gemini). */
-    pdfBase64?: string;
+    /** The same pages as a PDF, or the photo/screenshot, for an AI that reads files (Gemini). */
+    file?: AttachedFile;
+    /** The text below is an AI transcription of an image, not a PDF text layer. */
+    fromImage?: boolean;
     pages?: { from: number; to: number };
   },
 ): Promise<{ drafts: (CourseDraft | BursaryDraft)[]; model: string }> {
@@ -484,24 +489,52 @@ export async function extractDrafts(
     contentType === "courses"
       ? `University: ${context.universityName ?? "unknown"}. Extract every undergraduate programme in this section that has entry requirements.`
       : "Extract the bursary (or bursaries) described in this text.";
-  const where = context.pages
-    ? `This is pages ${context.pages.from}-${context.pages.to} (section ${context.chunkNumber} of ${context.chunkCount}); programmes may continue from or onto other pages — skip any you can't see fully.`
-    : `This is section ${context.chunkNumber} of ${context.chunkCount}; programmes may be cut off at the edges — skip any you can't see fully.`;
-  const withPdf = Boolean(context.pdfBase64) && provider() === "gemini";
-  const user = withPdf
-    ? `${header}\n${where}\n\nThe attached PDF is the document: read it carefully, including tables. Below is the text layer extracted from the same pages. For every "quote", copy the words EXACTLY as they appear in this text layer whenever they are there, so they can be checked automatically. If the text layer is empty or garbled (e.g. a scanned page), copy the words exactly as printed in the PDF.\n\n<text_layer>\n${chunk}\n</text_layer>`
-    : `${header}\n${where}\n\n<document>\n${chunk}\n</document>`;
+  const where = context.fromImage
+    ? `This is image ${context.chunkNumber} of ${context.chunkCount} (a photo or screenshot); skip anything cut off at the edges.`
+    : context.pages
+      ? `This is pages ${context.pages.from}-${context.pages.to} (section ${context.chunkNumber} of ${context.chunkCount}); programmes may continue from or onto other pages — skip any you can't see fully.`
+      : `This is section ${context.chunkNumber} of ${context.chunkCount}; programmes may be cut off at the edges — skip any you can't see fully.`;
+  const withFile = Boolean(context.file) && provider() === "gemini";
+  const user =
+    withFile && context.fromImage
+      ? `${header}\n${where}\n\nThe attached image is the document: read it carefully, including tables. Below is a word-for-word transcription of the same image. For every "quote", copy the words EXACTLY as they appear in this transcription whenever they are there, so they can be checked automatically.\n\n<transcription>\n${chunk}\n</transcription>`
+      : withFile
+        ? `${header}\n${where}\n\nThe attached PDF is the document: read it carefully, including tables. Below is the text layer extracted from the same pages. For every "quote", copy the words EXACTLY as they appear in this text layer whenever they are there, so they can be checked automatically. If the text layer is empty or garbled (e.g. a scanned page), copy the words exactly as printed in the PDF.\n\n<text_layer>\n${chunk}\n</text_layer>`
+        : `${header}\n${where}\n\n<document>\n${chunk}\n</document>`;
   const { data: raw, model } = await chatJson(
     contentType === "courses" ? COURSE_SYSTEM : BURSARY_SYSTEM,
     user,
     4000,
-    withPdf ? context.pdfBase64 : undefined,
+    withFile ? context.file : undefined,
   );
   const items = asItems(raw);
   return {
     drafts: contentType === "courses" ? items.map(toCourse) : items.map(toBursary),
     model,
   };
+}
+
+const TRANSCRIBE_SYSTEM = `You transcribe images of official documents (prospectus pages, bursary posters, notices) word for word.
+Rules:
+1. Copy ALL visible text exactly as written: same spelling, numbers, symbols and capitalisation. Top to bottom, left to right.
+2. Keep line breaks. Write each table row on one line with " | " between cells.
+3. Never summarise, correct, translate, explain or add anything.
+4. If some text is unreadable, write [unreadable] in its place. Never guess.
+Return JSON: {"text": string, "legible": "yes" | "partly" | "no"}`;
+
+/** Word-for-word text of an image, so drafts from it can be quote-checked. */
+export async function transcribeImage(
+  file: AttachedFile,
+): Promise<{ text: string; legible: "yes" | "partly" | "no"; model: string }> {
+  if (provider() !== "gemini")
+    throw new Error(
+      "Reading images needs Gemini. Set GEMINI_API_KEY (and don't set AI_PROVIDER=groq).",
+    );
+  const { data, model } = await chatJson(TRANSCRIBE_SYSTEM, "Transcribe this image.", 8000, file);
+  const raw = data as { text?: unknown; legible?: unknown };
+  const text = typeof raw?.text === "string" ? raw.text.slice(0, 60_000) : "";
+  const legible = raw?.legible === "yes" || raw?.legible === "partly" ? raw.legible : "no";
+  return { text, legible: text.trim() ? legible : "no", model };
 }
 
 /** Second, independent pass: does each value match its own quote? */

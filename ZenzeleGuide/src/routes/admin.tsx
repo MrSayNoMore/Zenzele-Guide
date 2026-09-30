@@ -13,6 +13,7 @@ import {
   ShieldAlert,
   Wallet,
   X,
+  Wrench,
 } from "lucide-react";
 import { Logo } from "@/components/site/logo";
 import { Toaster } from "@/components/ui/sonner";
@@ -31,6 +32,7 @@ const NAV = [
   { path: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/admin/universities", label: "Universities", icon: Building2 },
   { path: "/admin/courses", label: "Courses", icon: GraduationCap },
+  { path: "/admin/tvet", label: "TVET colleges", icon: Wrench },
   { path: "/admin/bursaries", label: "Bursaries", icon: Wallet },
   { path: "/admin/subjects", label: "NSC subjects", icon: BookOpen },
   { path: "/admin/ai-import", label: "AI import", icon: Sparkles },

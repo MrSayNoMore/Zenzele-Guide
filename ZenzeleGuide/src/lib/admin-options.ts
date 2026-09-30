@@ -32,6 +32,12 @@ export const FIELDS_OF_STUDY = [
   { value: "agriculture", label: "Agriculture" },
 ] as const;
 
+export const TVET_PROGRAM_TYPES = [
+  { value: "ncv", label: "NC(V): National Certificate (Vocational)" },
+  { value: "report_191", label: "Report 191 (NATED N1–N6)" },
+  { value: "occupational", label: "Occupational programme" },
+] as const;
+
 export const CITIZENSHIP = [
   { value: "sa_citizen", label: "SA citizens" },
   { value: "sa_permanent_resident", label: "SA permanent residents" },

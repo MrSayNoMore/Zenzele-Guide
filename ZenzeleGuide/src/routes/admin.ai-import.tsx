@@ -7,6 +7,7 @@ import {
   ExternalLink,
   FileText,
   Globe,
+  Image as ImageIcon,
   Loader2,
   Quote,
   Sparkles,
@@ -33,8 +34,14 @@ import {
   type DraftChecks,
   type Issue,
 } from "@/lib/ai-import/shared";
-import { aiExtractChunk, aiImportInfo, fetchPageText } from "@/lib/ai-import/functions";
+import {
+  aiExtractChunk,
+  aiImportInfo,
+  aiTranscribeImage,
+  fetchPageText,
+} from "@/lib/ai-import/functions";
 import { promoteDraft, rejectDraft, type DraftRow } from "@/lib/ai-import/promote";
+import { IMAGE_TYPES, MAX_IMAGES } from "@/lib/ai-import/images";
 
 export const Route = createFileRoute("/admin/ai-import")({
   head: () => ({ meta: [{ title: "AI import — Admin" }] }),
@@ -44,7 +51,7 @@ export const Route = createFileRoute("/admin/ai-import")({
   component: AiImportPage,
 });
 
-type SourceKind = "pdf" | "url" | "text";
+type SourceKind = "pdf" | "image" | "url" | "text";
 type ContentType = "courses" | "bursaries";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -77,6 +84,7 @@ function NewImport() {
   const [universityId, setUniversityId] = useState("");
   const [intakeYear, setIntakeYear] = useState(String(new Date().getFullYear() + 1));
   const [file, setFile] = useState<File | null>(null);
+  const [images, setImages] = useState<File[]>([]);
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [fromPage, setFromPage] = useState("1");
   const [toPage, setToPage] = useState("");
@@ -158,6 +166,7 @@ function NewImport() {
       let officialUrl = sourceUrl.trim();
       let pageRange: string | null = null;
       let pdfRuns: { from: number; to: number }[] | null = null;
+      let prepared: { data: string; mime: "image/jpeg" | "image/png" | "image/webp" }[] = [];
 
       if (sourceKind === "pdf") {
         if (!file) throw new Error("Choose a PDF file.");
@@ -184,6 +193,46 @@ function NewImport() {
         filename = file.name;
         pageRange = `${from}-${to}`;
         if (readsPdf) pdfRuns = pageChunks(from, to);
+      } else if (sourceKind === "image") {
+        if (!readsPdf)
+          throw new Error(
+            "Reading images needs Gemini. In Cloudflare, set GEMINI_API_KEY and remove AI_PROVIDER=groq.",
+          );
+        if (!images.length) throw new Error("Choose at least one image.");
+        if (images.length > MAX_IMAGES)
+          throw new Error(`Choose at most ${MAX_IMAGES} images at a time.`);
+        const { prepareImage } = await import("@/lib/ai-import/images");
+        prepared = [];
+        for (const img of images) prepared.push(await prepareImage(img));
+        // Read each image word for word first, so every quote can be checked.
+        const parts: string[] = [];
+        for (let i = 0; i < prepared.length; i++) {
+          for (let attempt = 0; ; attempt++) {
+            setProgress({ label: "Reading the images", done: i, total: prepared.length });
+            const res = await aiTranscribeImage({
+              data: { imageBase64: prepared[i].data, mime: prepared[i].mime },
+            });
+            if (!res.rateLimitedFor) {
+              parts.push(`--- Page ${i + 1} ---\n${res.text.trim()}`);
+              break;
+            }
+            if (attempt === 5) throw new Error(stillLimited(res));
+            for (let s = res.rateLimitedFor; s > 0; s--) {
+              setProgress({
+                label: "Reading the images",
+                done: i,
+                total: prepared.length,
+                waiting: s,
+              });
+              await sleep(1000);
+            }
+          }
+        }
+        text = parts.join("\n\n");
+        filename =
+          images.length === 1 ? images[0].name : `${images[0].name} + ${images.length - 1} more`;
+        pageRange = `1-${prepared.length}`;
+        pdfRuns = pageChunks(1, prepared.length, 1);
       } else if (sourceKind === "url") {
         if (!isHttpUrl(url.trim()))
           throw new Error("Enter a full web address starting with https://");
@@ -229,7 +278,7 @@ function NewImport() {
           uploaded_by: auth.user?.id ?? null,
           status: "extracting",
           chunks_total: total,
-          chunk_pages: pdfRuns ? PDF_PAGES_PER_CHUNK : null,
+          chunk_pages: sourceKind === "image" ? 1 : pdfRuns ? PDF_PAGES_PER_CHUNK : null,
         })
         .select("id")
         .single();
@@ -245,9 +294,14 @@ function NewImport() {
           splitter && pdfRuns
             ? ((await splitter.pages(pdfRuns[i].from, pdfRuns[i].to)) ?? undefined)
             : undefined;
+        const attachment = prepared[i]
+          ? { fileBase64: prepared[i].data, fileMime: prepared[i].mime }
+          : pdfBase64
+            ? { fileBase64: pdfBase64, fileMime: "application/pdf" as const }
+            : {};
         for (let attempt = 0; attempt < 6; attempt++) {
           const res = await aiExtractChunk({
-            data: { uploadId: row.id, chunkIndex: i, pdfBase64 },
+            data: { uploadId: row.id, chunkIndex: i, ...attachment },
           });
           if (!res.rateLimitedFor) {
             created += res.created;
@@ -286,6 +340,7 @@ function NewImport() {
 
   const sourceTabs: { value: SourceKind; label: string; icon: typeof FileText }[] = [
     { value: "pdf", label: "Upload PDF", icon: FileText },
+    { value: "image", label: "Photos / images", icon: ImageIcon },
     { value: "url", label: "Web page", icon: Globe },
     { value: "text", label: "Paste text", icon: Type },
   ];
@@ -411,6 +466,35 @@ function NewImport() {
               {readsPdf
                 ? "Choose just the pages with admission requirements (up to 80). The AI reads the pages themselves, including tables and scanned pages."
                 : "Choose just the pages with admission requirements (up to 80). Scanned PDFs have no text; paste the text instead."}
+            </p>
+          </div>
+        )}
+        {sourceKind === "image" && (
+          <div className="space-y-3">
+            <input
+              type="file"
+              multiple
+              accept={IMAGE_TYPES.join(",")}
+              onChange={(e) => setImages(Array.from(e.target.files ?? []))}
+              className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-3 file:py-2 file:text-sm"
+            />
+            {images.length > 0 && (
+              <ul className="space-y-1 text-sm">
+                {images.map((img, i) => (
+                  <li key={`${img.name}-${i}`} className="flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                    <span className="truncate">{img.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {(img.size / 1024 / 1024).toFixed(1)} MB
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {readsPdf
+                ? `Photos or screenshots of a bursary poster or prospectus pages (JPG, PNG or WebP, up to ${MAX_IMAGES}). Take them straight on, in good light, with the text sharp. The AI copies the text word for word first, then drafts from it; every draft from an image needs your check against the picture.`
+                : "Reading images needs Gemini. In Cloudflare, set GEMINI_API_KEY and remove AI_PROVIDER=groq."}
             </p>
           </div>
         )}
@@ -662,7 +746,13 @@ function Review({ uploadId }: { uploadId: string }) {
             ? ((await splitter.pages(runs[i].from, runs[i].to)) ?? undefined)
             : undefined;
         for (let attempt = 0; attempt < 6; attempt++) {
-          const res = await aiExtractChunk({ data: { uploadId, chunkIndex: i, pdfBase64 } });
+          const res = await aiExtractChunk({
+            data: {
+              uploadId,
+              chunkIndex: i,
+              ...(pdfBase64 ? { fileBase64: pdfBase64, fileMime: "application/pdf" as const } : {}),
+            },
+          });
           if (!res.rateLimitedFor) break;
           if (attempt === 5) throw new Error(stillLimited(res));
           await sleep(res.rateLimitedFor * 1000);
@@ -723,7 +813,7 @@ function Review({ uploadId }: { uploadId: string }) {
               Read {u.chunks_done} of {u.chunks_total} sections
               {lastError ? `: ${lastError}` : ""}.
             </span>
-            {u.chunk_pages && (
+            {u.chunk_pages && u.source_kind !== "image" && (
               <label className="flex items-center gap-2 text-xs">
                 <span>Optional: choose the same PDF so the AI can read the pages</span>
                 <input
@@ -753,7 +843,7 @@ function Review({ uploadId }: { uploadId: string }) {
                 </li>
               ))}
             </ul>
-            {u.chunk_pages && !unfinished && (
+            {u.chunk_pages && u.source_kind !== "image" && !unfinished && (
               <div className="flex flex-wrap items-center gap-3">
                 <label className="flex items-center gap-2 text-xs">
                   <span>Choose the same PDF:</span>

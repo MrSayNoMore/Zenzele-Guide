@@ -804,6 +804,7 @@ export type Database = {
           field_of_study: string | null
           id: string
           is_published: boolean
+          last_verified_at: string | null
           min_grade: number | null
           name: string
           nqf_level: number | null
@@ -821,6 +822,7 @@ export type Database = {
           field_of_study?: string | null
           id?: string
           is_published?: boolean
+          last_verified_at?: string | null
           min_grade?: number | null
           name: string
           nqf_level?: number | null
@@ -838,6 +840,7 @@ export type Database = {
           field_of_study?: string | null
           id?: string
           is_published?: boolean
+          last_verified_at?: string | null
           min_grade?: number | null
           name?: string
           nqf_level?: number | null

@@ -34,6 +34,7 @@ export const aiImportInfo = createServerFn({ method: "GET" }).handler(async () =
 // ---------------------------------------------------------------------------
 
 const MAX_PAGE_BYTES = 3_000_000;
+const FILE_MIMES = ["application/pdf", "image/jpeg", "image/png", "image/webp"] as const;
 
 export const fetchPageText = createServerFn({ method: "POST" })
   .validator(z.object({ url: z.string().url().max(2000) }))
@@ -78,6 +79,40 @@ export const fetchPageText = createServerFn({ method: "POST" })
   });
 
 // ---------------------------------------------------------------------------
+// Image -> text (word-for-word), so drafts from photos can be quote-checked
+// ---------------------------------------------------------------------------
+
+export const aiTranscribeImage = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      imageBase64: z
+        .string()
+        .min(100)
+        .max(9_000_000)
+        .regex(/^[A-Za-z0-9+/]*={0,2}$/),
+      mime: z.enum(["image/jpeg", "image/png", "image/webp"]),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const { transcribeImage, RateLimitError } = await import("./ai.server");
+    try {
+      const result = await transcribeImage({ data: data.imageBase64, mime: data.mime });
+      return { ...result, rateLimitedFor: 0, rateLimitReason: "" };
+    } catch (e) {
+      if (e instanceof RateLimitError)
+        return {
+          text: "",
+          legible: "no" as const,
+          model: "",
+          rateLimitedFor: e.retryAfterSeconds,
+          rateLimitReason: e.reason,
+        };
+      throw e;
+    }
+  });
+
+// ---------------------------------------------------------------------------
 // Extract one section with AI, check it, and save drafts
 // ---------------------------------------------------------------------------
 
@@ -86,13 +121,15 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
     z.object({
       uploadId: z.string().uuid(),
       chunkIndex: z.number().int().min(0).max(500),
-      // This section's pages as a PDF (base64), for an AI that reads PDFs.
-      // Optional: without it the AI reads the extracted text instead.
-      pdfBase64: z
+      // This section's pages as a PDF, or the image it came from (base64),
+      // for an AI that reads files. Optional: without it the AI reads the
+      // saved text instead.
+      fileBase64: z
         .string()
         .max(20_000_000)
         .regex(/^[A-Za-z0-9+/]*={0,2}$/)
         .optional(),
+      fileMime: z.enum(FILE_MIMES).optional(),
     }),
   )
   .handler(async ({ data }) => {
@@ -116,7 +153,7 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
     const { data: upload, error } = await db
       .from("prospectus_uploads")
       .select(
-        "id, content_type, source_text, page_range, chunk_pages, chunks_done, error_message, university_id, universities(name)",
+        "id, content_type, source_kind, source_text, page_range, chunk_pages, chunks_done, error_message, university_id, universities(name)",
       )
       .eq("id", data.uploadId)
       .single();
@@ -136,8 +173,13 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
     // Scanned pages have no text: the AI can only read them from the PDF, and
     // quotes from them can't be checked against the text.
     const scanned = pages ? scannedPages(sectionText) : [];
-    const aiSeesPdf = Boolean(data.pdfBase64) && aiInfo().readsPdf;
-    const scannedLabel = `${scanned.length === 1 ? "Page" : "Pages"} ${listPages(scanned)}`;
+    const fromImage = upload.source_kind === "image";
+    const file = data.fileBase64
+      ? { data: data.fileBase64, mime: data.fileMime ?? "application/pdf" }
+      : undefined;
+    const aiSeesPdf = Boolean(file) && aiInfo().readsPdf;
+    const unit = fromImage ? "Image" : "Page";
+    const scannedLabel = `${unit}${scanned.length === 1 ? "" : "s"} ${listPages(scanned)}`;
     // Notices that stay on the import (pages that couldn't be read), one per
     // section and replaced when the section is read again. Other stored
     // messages are errors that a successful section clears.
@@ -147,7 +189,11 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
         .split("\n")
         .filter((line) => line.startsWith("Not read (") && !line.startsWith(sectionTag)),
     );
-    if (scanned.length && !aiSeesPdf) {
+    if (fromImage && scanned.length) {
+      notices.add(
+        `${sectionTag}No readable text was found in ${scannedLabel.toLowerCase()}. Take a clearer, closer photo, or use Paste text.`,
+      );
+    } else if (scanned.length && !aiSeesPdf) {
       notices.add(
         `${sectionTag}${scannedLabel} ${scanned.length === 1 ? "is a scanned image" : "are scanned images"} and the PDF wasn't sent to the AI. Choose the same PDF below so the AI can read ${scanned.length === 1 ? "it" : "them"}.`,
       );
@@ -200,7 +246,8 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
         universityName,
         chunkNumber: data.chunkIndex + 1,
         chunkCount,
-        pdfBase64: data.pdfBase64,
+        file,
+        fromImage,
         pages,
       });
       drafts = extracted.drafts;
@@ -278,7 +325,16 @@ export const aiExtractChunk = createServerFn({ method: "POST" })
           ? checkCourseDraft(d as never, upload.source_text, subjects ?? [], existingNames)
           : checkBursaryDraft(d as never, upload.source_text, existingNames);
       const checks = withVerifier(base, verdicts[i]);
-      if (scanned.length) {
+      if (fromImage) {
+        // The text came from an AI transcription, so matching quotes proves
+        // less than it does for a PDF text layer: a human always checks.
+        checks.status = "attention";
+        checks.issues.unshift({
+          field: "notes",
+          severity: "high",
+          message: `From image ${data.chunkIndex + 1}: its text was read by AI. Check every value against the picture yourself.`,
+        });
+      } else if (scanned.length) {
         checks.status = "attention";
         checks.issues.unshift({
           field: "notes",
