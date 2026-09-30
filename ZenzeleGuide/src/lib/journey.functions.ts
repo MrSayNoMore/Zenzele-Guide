@@ -15,6 +15,7 @@ import {
   countTvetMatches,
 } from "@/engine";
 import { LearnerProfile } from "@/engine/schemas";
+import { SAVED_KINDS } from "./saved";
 import type { Grade12Result, NsfasResult, BursaryResult, TvetResult } from "@/engine/types";
 import { createClock } from "@/engine/shared/clock";
 import { ENGINE_VERSION } from "@/engine/version";
@@ -61,7 +62,7 @@ const ClaimResultInputSchema = z.object({
 const ResultIdSchema = z.object({ resultId: z.string().uuid() });
 
 const ToggleSavedInputSchema = z.object({
-  kind: z.enum(["course", "bursary", "tvet_program"]),
+  kind: z.enum(SAVED_KINDS),
   refId: z.string().uuid(),
 });
 

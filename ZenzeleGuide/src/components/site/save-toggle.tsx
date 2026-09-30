@@ -3,11 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bookmark } from "lucide-react";
 import { listMySavedIds, toggleSavedItem } from "@/lib/journey.functions";
 import { useAuth } from "@/hooks/use-auth";
+import type { SavedKind } from "@/lib/saved";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Adds a course, bursary or TVET programme to the signed-in learner's
+ * Adds a course, bursary, TVET programme or opportunity to the signed-in learner's
  * shortlist (My Zenzele). Signed-out visitors get a link to sign up.
  * `variant="button"` shows a labelled button instead of a bare icon.
  */
@@ -17,7 +18,7 @@ export function SaveToggle({
   returnTo,
   variant = "icon",
 }: {
-  kind: "course" | "bursary" | "tvet_program";
+  kind: SavedKind;
   refId?: string;
   returnTo: string;
   variant?: "icon" | "button";

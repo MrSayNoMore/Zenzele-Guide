@@ -552,6 +552,81 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunities: {
+        Row: {
+          closes_at: string | null
+          created_at: string
+          description: string | null
+          duration_months: number | null
+          field_of_study: string | null
+          how_to_apply: string | null
+          id: string
+          is_published: boolean
+          kind: Database["public"]["Enums"]["opportunity_kind"]
+          last_verified_at: string | null
+          max_age: number | null
+          min_education: Database["public"]["Enums"]["education_level"] | null
+          opens_at: string | null
+          organisation: string
+          provinces: string[]
+          seta: string | null
+          slug: string
+          source_url: string | null
+          stipend: string | null
+          title: string
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          closes_at?: string | null
+          created_at?: string
+          description?: string | null
+          duration_months?: number | null
+          field_of_study?: string | null
+          how_to_apply?: string | null
+          id?: string
+          is_published?: boolean
+          kind: Database["public"]["Enums"]["opportunity_kind"]
+          last_verified_at?: string | null
+          max_age?: number | null
+          min_education?: Database["public"]["Enums"]["education_level"] | null
+          opens_at?: string | null
+          organisation: string
+          provinces?: string[]
+          seta?: string | null
+          slug: string
+          source_url?: string | null
+          stipend?: string | null
+          title: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          closes_at?: string | null
+          created_at?: string
+          description?: string | null
+          duration_months?: number | null
+          field_of_study?: string | null
+          how_to_apply?: string | null
+          id?: string
+          is_published?: boolean
+          kind?: Database["public"]["Enums"]["opportunity_kind"]
+          last_verified_at?: string | null
+          max_age?: number | null
+          min_education?: Database["public"]["Enums"]["education_level"] | null
+          opens_at?: string | null
+          organisation?: string
+          provinces?: string[]
+          seta?: string | null
+          slug?: string
+          source_url?: string | null
+          stipend?: string | null
+          title?: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           career_stage: string | null
@@ -957,6 +1032,17 @@ export type Database = {
     Enums: {
       app_role: "super_admin" | "content_admin" | "learner"
       draft_state: "pending" | "approved" | "rejected"
+      education_level:
+        | "none"
+        | "grade_9"
+        | "grade_10"
+        | "grade_11"
+        | "grade_12"
+        | "nqf_4"
+        | "certificate"
+        | "diploma"
+        | "degree"
+        | "postgraduate"
       journey_type:
         | "grade_12"
         | "nsfas"
@@ -969,6 +1055,12 @@ export type Database = {
         | "learnership"
         | "graduate"
       match_status: "qualifies" | "borderline" | "below" | "missing_info"
+      opportunity_kind:
+        | "learnership"
+        | "apprenticeship"
+        | "internship"
+        | "graduate_programme"
+        | "short_course"
       tvet_program_type: "ncv" | "report_191" | "occupational"
       uni_type: "traditional" | "university_of_technology" | "comprehensive"
     }
@@ -1100,6 +1192,18 @@ export const Constants = {
     Enums: {
       app_role: ["super_admin", "content_admin", "learner"],
       draft_state: ["pending", "approved", "rejected"],
+      education_level: [
+        "none",
+        "grade_9",
+        "grade_10",
+        "grade_11",
+        "grade_12",
+        "nqf_4",
+        "certificate",
+        "diploma",
+        "degree",
+        "postgraduate",
+      ],
       journey_type: [
         "grade_12",
         "nsfas",
@@ -1113,6 +1217,13 @@ export const Constants = {
         "graduate",
       ],
       match_status: ["qualifies", "borderline", "below", "missing_info"],
+      opportunity_kind: [
+        "learnership",
+        "apprenticeship",
+        "internship",
+        "graduate_programme",
+        "short_course",
+      ],
       tvet_program_type: ["ncv", "report_191", "occupational"],
       uni_type: ["traditional", "university_of_technology", "comprehensive"],
     },

@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   ArrowLeft,
   BookOpen,
+  Briefcase,
   Building2,
   GraduationCap,
   LayoutDashboard,
@@ -36,6 +37,7 @@ const NAV = [
   { path: "/admin/tvet", label: "TVET colleges", icon: Wrench },
   { path: "/admin/bursaries", label: "Bursaries", icon: Wallet },
   { path: "/admin/careers", label: "Careers", icon: Compass },
+  { path: "/admin/opportunities", label: "Learnerships", icon: Briefcase },
   { path: "/admin/subjects", label: "NSC subjects", icon: BookOpen },
   { path: "/admin/ai-import", label: "AI import", icon: Sparkles },
 ] as const;

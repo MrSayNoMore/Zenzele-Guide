@@ -13,6 +13,7 @@ import { Route as UniversitiesRouteImport } from './routes/universities'
 import { Route as TvetCollegesRouteImport } from './routes/tvet-colleges'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as OpportunitiesRouteImport } from './routes/opportunities'
 import { Route as MeRouteImport } from './routes/me'
 import { Route as CareersRouteImport } from './routes/careers'
 import { Route as BursariesRouteImport } from './routes/bursaries'
@@ -24,12 +25,16 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as UniversitiesSlugRouteImport } from './routes/universities_.$slug'
 import { Route as TvetCollegesSlugRouteImport } from './routes/tvet-colleges_.$slug'
 import { Route as ResultsResultIdRouteImport } from './routes/results.$resultId'
+import { Route as OpportunitiesSlugRouteImport } from './routes/opportunities_.$slug'
 import { Route as JourneyUniversityRouteImport } from './routes/journey.university'
 import { Route as JourneyTvetRouteImport } from './routes/journey.tvet'
 import { Route as JourneyNsfasRouteImport } from './routes/journey.nsfas'
+import { Route as JourneyLearnershipRouteImport } from './routes/journey.learnership'
+import { Route as JourneyGraduateRouteImport } from './routes/journey.graduate'
 import { Route as JourneyGrade12RouteImport } from './routes/journey.grade-12'
 import { Route as JourneyGrade11RouteImport } from './routes/journey.grade-11'
 import { Route as JourneyGrade10RouteImport } from './routes/journey.grade-10'
+import { Route as JourneyGapYearRouteImport } from './routes/journey.gap-year'
 import { Route as JourneyBursaryRouteImport } from './routes/journey.bursary'
 import { Route as JourneySlugRouteImport } from './routes/journey.$slug'
 import { Route as CareersSlugRouteImport } from './routes/careers_.$slug'
@@ -40,6 +45,7 @@ import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as AdminUniversitiesRouteImport } from './routes/admin.universities'
 import { Route as AdminTvetRouteImport } from './routes/admin.tvet'
 import { Route as AdminSubjectsRouteImport } from './routes/admin.subjects'
+import { Route as AdminOpportunitiesRouteImport } from './routes/admin.opportunities'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminCoursesRouteImport } from './routes/admin.courses'
 import { Route as AdminCareersRouteImport } from './routes/admin.careers'
@@ -64,6 +70,11 @@ const TermsRoute = TermsRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpportunitiesRoute = OpportunitiesRouteImport.update({
+  id: '/opportunities',
+  path: '/opportunities',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeRoute = MeRouteImport.update({
@@ -121,6 +132,11 @@ const ResultsResultIdRoute = ResultsResultIdRouteImport.update({
   path: '/results/$resultId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OpportunitiesSlugRoute = OpportunitiesSlugRouteImport.update({
+  id: '/opportunities_/$slug',
+  path: '/opportunities/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JourneyUniversityRoute = JourneyUniversityRouteImport.update({
   id: '/journey/university',
   path: '/journey/university',
@@ -136,6 +152,16 @@ const JourneyNsfasRoute = JourneyNsfasRouteImport.update({
   path: '/journey/nsfas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JourneyLearnershipRoute = JourneyLearnershipRouteImport.update({
+  id: '/journey/learnership',
+  path: '/journey/learnership',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JourneyGraduateRoute = JourneyGraduateRouteImport.update({
+  id: '/journey/graduate',
+  path: '/journey/graduate',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JourneyGrade12Route = JourneyGrade12RouteImport.update({
   id: '/journey/grade-12',
   path: '/journey/grade-12',
@@ -149,6 +175,11 @@ const JourneyGrade11Route = JourneyGrade11RouteImport.update({
 const JourneyGrade10Route = JourneyGrade10RouteImport.update({
   id: '/journey/grade-10',
   path: '/journey/grade-10',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JourneyGapYearRoute = JourneyGapYearRouteImport.update({
+  id: '/journey/gap-year',
+  path: '/journey/gap-year',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JourneyBursaryRoute = JourneyBursaryRouteImport.update({
@@ -201,6 +232,11 @@ const AdminSubjectsRoute = AdminSubjectsRouteImport.update({
   path: '/subjects',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminOpportunitiesRoute = AdminOpportunitiesRouteImport.update({
+  id: '/opportunities',
+  path: '/opportunities',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -235,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/bursaries': typeof BursariesRoute
   '/careers': typeof CareersRoute
   '/me': typeof MeRoute
+  '/opportunities': typeof OpportunitiesRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/tvet-colleges': typeof TvetCollegesRoute
@@ -244,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/admin/careers': typeof AdminCareersRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/opportunities': typeof AdminOpportunitiesRoute
   '/admin/subjects': typeof AdminSubjectsRoute
   '/admin/tvet': typeof AdminTvetRoute
   '/admin/universities': typeof AdminUniversitiesRoute
@@ -254,12 +292,16 @@ export interface FileRoutesByFullPath {
   '/careers/$slug': typeof CareersSlugRoute
   '/journey/$slug': typeof JourneySlugRoute
   '/journey/bursary': typeof JourneyBursaryRoute
+  '/journey/gap-year': typeof JourneyGapYearRoute
   '/journey/grade-10': typeof JourneyGrade10Route
   '/journey/grade-11': typeof JourneyGrade11Route
   '/journey/grade-12': typeof JourneyGrade12Route
+  '/journey/graduate': typeof JourneyGraduateRoute
+  '/journey/learnership': typeof JourneyLearnershipRoute
   '/journey/nsfas': typeof JourneyNsfasRoute
   '/journey/tvet': typeof JourneyTvetRoute
   '/journey/university': typeof JourneyUniversityRoute
+  '/opportunities/$slug': typeof OpportunitiesSlugRoute
   '/results/$resultId': typeof ResultsResultIdRoute
   '/tvet-colleges/$slug': typeof TvetCollegesSlugRoute
   '/universities/$slug': typeof UniversitiesSlugRoute
@@ -272,6 +314,7 @@ export interface FileRoutesByTo {
   '/bursaries': typeof BursariesRoute
   '/careers': typeof CareersRoute
   '/me': typeof MeRoute
+  '/opportunities': typeof OpportunitiesRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/tvet-colleges': typeof TvetCollegesRoute
@@ -281,6 +324,7 @@ export interface FileRoutesByTo {
   '/admin/careers': typeof AdminCareersRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/opportunities': typeof AdminOpportunitiesRoute
   '/admin/subjects': typeof AdminSubjectsRoute
   '/admin/tvet': typeof AdminTvetRoute
   '/admin/universities': typeof AdminUniversitiesRoute
@@ -291,12 +335,16 @@ export interface FileRoutesByTo {
   '/careers/$slug': typeof CareersSlugRoute
   '/journey/$slug': typeof JourneySlugRoute
   '/journey/bursary': typeof JourneyBursaryRoute
+  '/journey/gap-year': typeof JourneyGapYearRoute
   '/journey/grade-10': typeof JourneyGrade10Route
   '/journey/grade-11': typeof JourneyGrade11Route
   '/journey/grade-12': typeof JourneyGrade12Route
+  '/journey/graduate': typeof JourneyGraduateRoute
+  '/journey/learnership': typeof JourneyLearnershipRoute
   '/journey/nsfas': typeof JourneyNsfasRoute
   '/journey/tvet': typeof JourneyTvetRoute
   '/journey/university': typeof JourneyUniversityRoute
+  '/opportunities/$slug': typeof OpportunitiesSlugRoute
   '/results/$resultId': typeof ResultsResultIdRoute
   '/tvet-colleges/$slug': typeof TvetCollegesSlugRoute
   '/universities/$slug': typeof UniversitiesSlugRoute
@@ -311,6 +359,7 @@ export interface FileRoutesById {
   '/bursaries': typeof BursariesRoute
   '/careers': typeof CareersRoute
   '/me': typeof MeRoute
+  '/opportunities': typeof OpportunitiesRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/tvet-colleges': typeof TvetCollegesRoute
@@ -320,6 +369,7 @@ export interface FileRoutesById {
   '/admin/careers': typeof AdminCareersRoute
   '/admin/courses': typeof AdminCoursesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/opportunities': typeof AdminOpportunitiesRoute
   '/admin/subjects': typeof AdminSubjectsRoute
   '/admin/tvet': typeof AdminTvetRoute
   '/admin/universities': typeof AdminUniversitiesRoute
@@ -330,12 +380,16 @@ export interface FileRoutesById {
   '/careers_/$slug': typeof CareersSlugRoute
   '/journey/$slug': typeof JourneySlugRoute
   '/journey/bursary': typeof JourneyBursaryRoute
+  '/journey/gap-year': typeof JourneyGapYearRoute
   '/journey/grade-10': typeof JourneyGrade10Route
   '/journey/grade-11': typeof JourneyGrade11Route
   '/journey/grade-12': typeof JourneyGrade12Route
+  '/journey/graduate': typeof JourneyGraduateRoute
+  '/journey/learnership': typeof JourneyLearnershipRoute
   '/journey/nsfas': typeof JourneyNsfasRoute
   '/journey/tvet': typeof JourneyTvetRoute
   '/journey/university': typeof JourneyUniversityRoute
+  '/opportunities_/$slug': typeof OpportunitiesSlugRoute
   '/results/$resultId': typeof ResultsResultIdRoute
   '/tvet-colleges_/$slug': typeof TvetCollegesSlugRoute
   '/universities_/$slug': typeof UniversitiesSlugRoute
@@ -351,6 +405,7 @@ export interface FileRouteTypes {
     | '/bursaries'
     | '/careers'
     | '/me'
+    | '/opportunities'
     | '/privacy'
     | '/terms'
     | '/tvet-colleges'
@@ -360,6 +415,7 @@ export interface FileRouteTypes {
     | '/admin/careers'
     | '/admin/courses'
     | '/admin/dashboard'
+    | '/admin/opportunities'
     | '/admin/subjects'
     | '/admin/tvet'
     | '/admin/universities'
@@ -370,12 +426,16 @@ export interface FileRouteTypes {
     | '/careers/$slug'
     | '/journey/$slug'
     | '/journey/bursary'
+    | '/journey/gap-year'
     | '/journey/grade-10'
     | '/journey/grade-11'
     | '/journey/grade-12'
+    | '/journey/graduate'
+    | '/journey/learnership'
     | '/journey/nsfas'
     | '/journey/tvet'
     | '/journey/university'
+    | '/opportunities/$slug'
     | '/results/$resultId'
     | '/tvet-colleges/$slug'
     | '/universities/$slug'
@@ -388,6 +448,7 @@ export interface FileRouteTypes {
     | '/bursaries'
     | '/careers'
     | '/me'
+    | '/opportunities'
     | '/privacy'
     | '/terms'
     | '/tvet-colleges'
@@ -397,6 +458,7 @@ export interface FileRouteTypes {
     | '/admin/careers'
     | '/admin/courses'
     | '/admin/dashboard'
+    | '/admin/opportunities'
     | '/admin/subjects'
     | '/admin/tvet'
     | '/admin/universities'
@@ -407,12 +469,16 @@ export interface FileRouteTypes {
     | '/careers/$slug'
     | '/journey/$slug'
     | '/journey/bursary'
+    | '/journey/gap-year'
     | '/journey/grade-10'
     | '/journey/grade-11'
     | '/journey/grade-12'
+    | '/journey/graduate'
+    | '/journey/learnership'
     | '/journey/nsfas'
     | '/journey/tvet'
     | '/journey/university'
+    | '/opportunities/$slug'
     | '/results/$resultId'
     | '/tvet-colleges/$slug'
     | '/universities/$slug'
@@ -426,6 +492,7 @@ export interface FileRouteTypes {
     | '/bursaries'
     | '/careers'
     | '/me'
+    | '/opportunities'
     | '/privacy'
     | '/terms'
     | '/tvet-colleges'
@@ -435,6 +502,7 @@ export interface FileRouteTypes {
     | '/admin/careers'
     | '/admin/courses'
     | '/admin/dashboard'
+    | '/admin/opportunities'
     | '/admin/subjects'
     | '/admin/tvet'
     | '/admin/universities'
@@ -445,12 +513,16 @@ export interface FileRouteTypes {
     | '/careers_/$slug'
     | '/journey/$slug'
     | '/journey/bursary'
+    | '/journey/gap-year'
     | '/journey/grade-10'
     | '/journey/grade-11'
     | '/journey/grade-12'
+    | '/journey/graduate'
+    | '/journey/learnership'
     | '/journey/nsfas'
     | '/journey/tvet'
     | '/journey/university'
+    | '/opportunities_/$slug'
     | '/results/$resultId'
     | '/tvet-colleges_/$slug'
     | '/universities_/$slug'
@@ -465,6 +537,7 @@ export interface RootRouteChildren {
   BursariesRoute: typeof BursariesRoute
   CareersRoute: typeof CareersRoute
   MeRoute: typeof MeRoute
+  OpportunitiesRoute: typeof OpportunitiesRoute
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
   TvetCollegesRoute: typeof TvetCollegesRoute
@@ -476,12 +549,16 @@ export interface RootRouteChildren {
   CareersSlugRoute: typeof CareersSlugRoute
   JourneySlugRoute: typeof JourneySlugRoute
   JourneyBursaryRoute: typeof JourneyBursaryRoute
+  JourneyGapYearRoute: typeof JourneyGapYearRoute
   JourneyGrade10Route: typeof JourneyGrade10Route
   JourneyGrade11Route: typeof JourneyGrade11Route
   JourneyGrade12Route: typeof JourneyGrade12Route
+  JourneyGraduateRoute: typeof JourneyGraduateRoute
+  JourneyLearnershipRoute: typeof JourneyLearnershipRoute
   JourneyNsfasRoute: typeof JourneyNsfasRoute
   JourneyTvetRoute: typeof JourneyTvetRoute
   JourneyUniversityRoute: typeof JourneyUniversityRoute
+  OpportunitiesSlugRoute: typeof OpportunitiesSlugRoute
   ResultsResultIdRoute: typeof ResultsResultIdRoute
   TvetCollegesSlugRoute: typeof TvetCollegesSlugRoute
   UniversitiesSlugRoute: typeof UniversitiesSlugRoute
@@ -515,6 +592,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opportunities': {
+      id: '/opportunities'
+      path: '/opportunities'
+      fullPath: '/opportunities'
+      preLoaderRoute: typeof OpportunitiesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/me': {
@@ -594,6 +678,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResultsResultIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/opportunities_/$slug': {
+      id: '/opportunities_/$slug'
+      path: '/opportunities/$slug'
+      fullPath: '/opportunities/$slug'
+      preLoaderRoute: typeof OpportunitiesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/journey/university': {
       id: '/journey/university'
       path: '/journey/university'
@@ -615,6 +706,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JourneyNsfasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/journey/learnership': {
+      id: '/journey/learnership'
+      path: '/journey/learnership'
+      fullPath: '/journey/learnership'
+      preLoaderRoute: typeof JourneyLearnershipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/journey/graduate': {
+      id: '/journey/graduate'
+      path: '/journey/graduate'
+      fullPath: '/journey/graduate'
+      preLoaderRoute: typeof JourneyGraduateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/journey/grade-12': {
       id: '/journey/grade-12'
       path: '/journey/grade-12'
@@ -634,6 +739,13 @@ declare module '@tanstack/react-router' {
       path: '/journey/grade-10'
       fullPath: '/journey/grade-10'
       preLoaderRoute: typeof JourneyGrade10RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/journey/gap-year': {
+      id: '/journey/gap-year'
+      path: '/journey/gap-year'
+      fullPath: '/journey/gap-year'
+      preLoaderRoute: typeof JourneyGapYearRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/journey/bursary': {
@@ -706,6 +818,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSubjectsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/opportunities': {
+      id: '/admin/opportunities'
+      path: '/opportunities'
+      fullPath: '/admin/opportunities'
+      preLoaderRoute: typeof AdminOpportunitiesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/dashboard': {
       id: '/admin/dashboard'
       path: '/dashboard'
@@ -750,6 +869,7 @@ interface AdminRouteChildren {
   AdminCareersRoute: typeof AdminCareersRoute
   AdminCoursesRoute: typeof AdminCoursesRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminOpportunitiesRoute: typeof AdminOpportunitiesRoute
   AdminSubjectsRoute: typeof AdminSubjectsRoute
   AdminTvetRoute: typeof AdminTvetRoute
   AdminUniversitiesRoute: typeof AdminUniversitiesRoute
@@ -762,6 +882,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCareersRoute: AdminCareersRoute,
   AdminCoursesRoute: AdminCoursesRoute,
   AdminDashboardRoute: AdminDashboardRoute,
+  AdminOpportunitiesRoute: AdminOpportunitiesRoute,
   AdminSubjectsRoute: AdminSubjectsRoute,
   AdminTvetRoute: AdminTvetRoute,
   AdminUniversitiesRoute: AdminUniversitiesRoute,
@@ -778,6 +899,7 @@ const rootRouteChildren: RootRouteChildren = {
   BursariesRoute: BursariesRoute,
   CareersRoute: CareersRoute,
   MeRoute: MeRoute,
+  OpportunitiesRoute: OpportunitiesRoute,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
   TvetCollegesRoute: TvetCollegesRoute,
@@ -789,12 +911,16 @@ const rootRouteChildren: RootRouteChildren = {
   CareersSlugRoute: CareersSlugRoute,
   JourneySlugRoute: JourneySlugRoute,
   JourneyBursaryRoute: JourneyBursaryRoute,
+  JourneyGapYearRoute: JourneyGapYearRoute,
   JourneyGrade10Route: JourneyGrade10Route,
   JourneyGrade11Route: JourneyGrade11Route,
   JourneyGrade12Route: JourneyGrade12Route,
+  JourneyGraduateRoute: JourneyGraduateRoute,
+  JourneyLearnershipRoute: JourneyLearnershipRoute,
   JourneyNsfasRoute: JourneyNsfasRoute,
   JourneyTvetRoute: JourneyTvetRoute,
   JourneyUniversityRoute: JourneyUniversityRoute,
+  OpportunitiesSlugRoute: OpportunitiesSlugRoute,
   ResultsResultIdRoute: ResultsResultIdRoute,
   TvetCollegesSlugRoute: TvetCollegesSlugRoute,
   UniversitiesSlugRoute: UniversitiesSlugRoute,

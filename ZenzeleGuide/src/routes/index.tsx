@@ -57,9 +57,9 @@ const journeys: Journey[] = [
   { slug: "tvet", title: "I want to study at a TVET", blurb: "Discover NC(V) and Report 191 programmes near you.", Icon: BookOpen, status: "live", to: "/journey/tvet", accent: "#0E7C7B" },
   { slug: "grade-11", short: "Grade 11", title: "I'm in Grade 11", blurb: "See where your marks put you, and how to lift your APS.", Icon: Compass, status: "live", to: "/journey/grade-11" },
   { slug: "grade-10", short: "Grade 10", title: "I'm in Grade 10", blurb: "Pick subjects that open doors to the careers you want.", Icon: Compass, status: "live", to: "/journey/grade-10" },
-  { slug: "gap-year", short: "Gap year", title: "I'm taking a gap year", blurb: "Learnerships, short courses, and other paths forward.", Icon: Sparkles, status: "soon" },
-  { slug: "learnership", short: "Learnerships", title: "I want a learnership", blurb: "SETA-accredited learnerships across South Africa.", Icon: Briefcase, status: "soon" },
-  { slug: "graduate", short: "Graduates", title: "I just graduated", blurb: "Graduate programmes, internships, and first jobs.", Icon: Briefcase, status: "soon" },
+  { slug: "gap-year", short: "Gap year", title: "I'm taking a gap year", blurb: "Learnerships, short courses, and other paths forward.", Icon: Sparkles, status: "live", to: "/journey/gap-year" },
+  { slug: "learnership", short: "Learnerships", title: "I want a learnership", blurb: "SETA-accredited learnerships across South Africa.", Icon: Briefcase, status: "live", to: "/journey/learnership" },
+  { slug: "graduate", short: "Graduates", title: "I just graduated", blurb: "Graduate programmes, internships, and first jobs.", Icon: Briefcase, status: "live", to: "/journey/graduate" },
   { slug: "university", short: "University students", title: "I'm at university", blurb: "Postgrad funding and career planning.", Icon: GraduationCap, status: "live", to: "/journey/university" },
 ];
 
@@ -169,24 +169,26 @@ function Landing() {
               ))}
             </div>
 
-            <div className="mt-12 border-t border-border pt-8">
-              <h3 className="font-sans text-sm font-semibold text-foreground">
-                More paths <span className="font-normal text-muted-foreground">— coming soon</span>
-              </h3>
-              <ul className="mt-4 flex flex-wrap gap-2">
-                {soon.map((j) => (
-                  <li key={j.slug}>
-                    <a
-                      href={`/journey/${j.slug}`}
-                      className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3.5 text-sm text-muted-foreground transition hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <j.Icon className="h-4 w-4" />
-                      {j.short ?? j.title}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {soon.length > 0 && (
+              <div className="mt-12 border-t border-border pt-8">
+                <h3 className="font-sans text-sm font-semibold text-foreground">
+                  More paths <span className="font-normal text-muted-foreground">— coming soon</span>
+                </h3>
+                <ul className="mt-4 flex flex-wrap gap-2">
+                  {soon.map((j) => (
+                    <li key={j.slug}>
+                      <a
+                        href={`/journey/${j.slug}`}
+                        className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3.5 text-sm text-muted-foreground transition hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <j.Icon className="h-4 w-4" />
+                        {j.short ?? j.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </section>
 

@@ -18,6 +18,7 @@ import { SiteFooter } from "@/components/site/site-footer";
 import { signOut, useAuth, useIsAdmin } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { CAREER_STAGES, careerStageLabel } from "@/lib/career";
+import type { SavedKind } from "@/lib/saved";
 import {
   deleteMyResult,
   listMyResults,
@@ -43,6 +44,7 @@ const KIND_LABEL: Record<string, string> = {
   course: "Courses",
   bursary: "Bursaries",
   tvet_program: "TVET programmes",
+  opportunity: "Learnerships and programmes",
 };
 
 function MyZenzele() {
@@ -107,7 +109,7 @@ function Account({ email }: { email: string }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-results"] }),
   });
   const unsave = useMutation({
-    mutationFn: (item: { kind: "course" | "bursary" | "tvet_program"; refId: string }) =>
+    mutationFn: (item: { kind: SavedKind; refId: string }) =>
       toggleSavedItem({ data: item }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-saved"] });
